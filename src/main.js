@@ -37,14 +37,14 @@ const skyboxMaterial = new THREE.MeshBasicMaterial({
 const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
 
 //define the shape, material and lights for central sphere(sun)
-const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
+const sunGeometry = new THREE.SphereGeometry(7, 32, 32);
 const sunTexture = new THREE.TextureLoader().load('sun-texture.jpg');
 const sunNormalTexture = new THREE.TextureLoader().load('sun-normal-map.jpg');
-const sunMaterial = new THREE.MeshStandardMaterial({map: sunTexture, normalMap: sunNormalTexture});
+const sunMaterial = new THREE.MeshStandardMaterial({map: sunTexture, normalMap: sunNormalTexture, emissive: new THREE.Color(0xFC9601), emissiveIntensity: 0.05,});
 const sun = new THREE.Mesh(sunGeometry, sunMaterial);
 
 const pointLight = new THREE.PointLight(0xFFFFFF);
-pointLight.position.set(5,5,5);
+pointLight.position.set(10,10,10);
 const ambientLight = new THREE.AmbientLight(0xFFFFFF);
 
 //add helpers
@@ -85,9 +85,9 @@ function animate(){
 
   //spin the sun around, anti-clockwise
   sun.rotation.x += 0.00001;  //slight tilt along x-axis
-  sun.rotation.y -= 0.0002;
+  sun.rotation.y -= 0.00015;
   // sun.rotation.z += 0.0001;
-  skybox.rotation.y += 0.00005;
+  skybox.rotation.y += 0.00002;
 
   //for orbit controls
   controls.update();
