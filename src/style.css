@@ -5,3 +5,116 @@ canvas {
   width: 100%;
   height: 100%;
 }
+
+#github {
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  z-index: 10;
+  display: flex;
+  gap: 20px;
+}
+
+#login {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  z-index: 10;
+  display: flex;
+  gap: 20px;
+}
+
+#overlay a {
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+  font-family: Arial, sans-serif;
+  /* background: rgba(0, 0, 0, 0.6); */
+  padding: 10px 15px;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+#overlay a:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: black;
+}
+
+/* Modal Styles */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 50%;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Style the Tab Buttons */
+.tab {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+}
+
+.tab button {
+  padding: 14px 16px;
+  background-color: #f1f1f1;
+  border: none;
+  cursor: pointer;
+  width: 50%;
+}
+
+.tab button:hover {
+  background-color: #ddd;
+}
+
+/* Style the Form Inputs */
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+}
+
+button {
+  padding: 10px 15px;
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+/* Tab Content - Hidden by default */
+.tabcontent {
+  display: none;
+}

@@ -1,14 +1,58 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dates</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <canvas id="bg"></canvas>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dates</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <div id="overlay">
+    <!-- to replace text with github icon -->
+    <a href="https://github.com/w1ndro1d/Dates-Web-App" id="github">GitHub</a>
+    <a href="#" id="login">Login/Signup</a>
+  </div>
+
+  <!-- Modal Container -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <span id="closeModal" class="close">&times;</span>
+      <h2>Login / Sign Up</h2>
+
+      <!-- Tab Links (optional) -->
+      <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'LoginForm')" id="defaultOpen">Login</button>
+        <button class="tablinks" onclick="openTab(event, 'SignupForm')">Sign Up</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="LoginForm" class="tabcontent">
+        <form id="loginForm">
+          <input type="email" placeholder="Email" required><br>
+          <input type="password" placeholder="Password" required><br>
+          <button type="submit">Login</button>
+        </form>
+      </div>
+
+      <!-- Sign Up Form -->
+      <div id="SignupForm" class="tabcontent">
+        <form id="signupForm">
+          <input type="email" placeholder="Email" required><br>
+          <input type="password" placeholder="Password" required><br>
+          <input type="password" placeholder="Confirm Password" required><br>
+          <button type="submit">Sign Up</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="bg"></canvas>
+
+  <script src="/src/login-signup-modal-handler.js"></script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
 </html>
