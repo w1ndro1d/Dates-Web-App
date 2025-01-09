@@ -94,5 +94,47 @@ function animate(){
   //render the entire scene with camera
   renderer.render(scene, camera);
 }
-
 animate()
+
+//logic to show login/signup button if not logged in, show profile button if logged in
+document.addEventListener("DOMContentLoaded", () => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    try {
+      const decodedToken = decodeToken(token);
+      const userEmail = decodedToken.unique_name;
+
+      if (userEmail) {
+        // Hide login/signup button
+        // const loginSignupButton = document.getElementById("login");
+        loginSignupButton.style.display = "none";
+        modal.style.display = "none";
+
+        // Show profile button with the user's email
+        const profileButton = document.getElementById("profile");
+        profileButton.style.display = "flex";
+        profileButton.textContent = userEmail;
+
+        // Add click listener for profile button to redirect
+        profileButton.addEventListener("click", () => {
+          window.location.href = "/profile.html"; // Redirect to profile page
+        });
+
+        return; // Exit if the token is valid
+      }
+    } catch (error) {
+      console.error("Error decoding token: ", error);
+      // Clear invalid token from localStorage
+      localStorage.removeItem("token");
+    }
+  }
+
+  // If no valid token, ensure login/signup button is visible
+  // const loginSignupButton = document.getElementById("login");
+  loginSignupButton.style.display = "flex";
+
+  // Ensure profile button is hidden
+  // const profileButton = document.getElementById("profile");
+  profileButton.style.display = "none";
+});

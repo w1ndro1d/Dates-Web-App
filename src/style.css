@@ -53,6 +53,7 @@ canvas {
 
 /* Modal Styles */
 #loginModal {
+  /* visibility: hidden; */
   display: none;
   position: fixed;
   z-index: 1000;
@@ -147,6 +148,7 @@ form input {
   border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 14px;
+  width: 100%;
 }
 
 form button {
@@ -158,6 +160,7 @@ form button {
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.3s;
+  width: 100%;
 }
 
 form button:hover {
@@ -169,4 +172,13 @@ form button:hover {
   .modal-content {
     width: 95%;
   }
+}
+
+#profile {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  z-index: 10;
+  display: flex;
+  gap: 20px;
 }
