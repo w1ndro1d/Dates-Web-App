@@ -116,10 +116,18 @@ document.addEventListener("DOMContentLoaded", () => {
         profileButton.style.display = "flex";
         profileButton.textContent = userEmail;
 
+        // const dropdown = emailButton.closest('.dropdown');
+        
+
+        // Show My Events button
+        //only show this as part of dropdown
+        // const myEventsButton = document.getElementById("myevents");
+        // myEventsButton.style.display = "flex";        
+
         // Add click listener for profile button to redirect
-        profileButton.addEventListener("click", () => {
-          window.location.href = "/profile.html"; // Redirect to profile page
-        });
+        // profileButton.addEventListener("click", () => {
+        //   window.location.href = "/profile.html"; // Redirect to profile page
+        // });
 
         return; // Exit if the token is valid
       }

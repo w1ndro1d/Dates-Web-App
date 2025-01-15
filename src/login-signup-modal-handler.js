@@ -129,11 +129,16 @@ document.getElementById("loginForm").addEventListener("submit", async(e) => {
   
         //remove login/signup popup
         modal.style.display = "none";
+
+        // Show My Events button
+        //only show this as part of dropdown
+        // const myEventsButton = document.getElementById("myevents");
+        // myEventsButton.style.display = "flex";        
   
         //add click listener for Profile button
-        profileButton.addEventListener("click", () => {
-          window.location.href = "/profile.html";
-        })
+        // profileButton.addEventListener("click", () => {
+        //   window.location.href = "/profile.html";
+        // })
       }
       catch(error)
       {
@@ -160,5 +165,5 @@ document.getElementById("loginForm").addEventListener("submit", async(e) => {
   }
 });
 
-//TODO add logout button
+//TODO add logout and my events buttons on a drop down from profile button click
 //TODO fix textbox and button sizes auto scaling

@@ -14,7 +14,15 @@
     <!-- to replace text with github icon -->
     <a href="https://github.com/w1ndro1d/Dates-Web-App" id="github">GitHub</a>
     <a href="#" id="login">Login/Signup</a>
-    <a href="#" id="profile" style="display: none;">Profile</a>
+
+    <!-- profile dropdown-->
+    <div class="dropdown">
+      <a href="#" id="profile" style="display: none;">Profile</a>
+      <div class="dropdown-content">
+        <a href="#" id="myevents" style="display: none;">My Events</a>
+        <a href="#" id="logout" style="display: none;">Logout</a>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Container -->
@@ -52,8 +60,9 @@
 
   <canvas id="bg"></canvas>
 
+  <script src="/src/profile-button-handler.js"></script>
   <script src="/src/login-signup-modal-handler.js"></script>
-  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/main-3d.js"></script>
 </body>
 
 </html>
