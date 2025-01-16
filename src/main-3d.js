@@ -99,6 +99,10 @@ animate()
 //logic to show login/signup button if not logged in, show profile button if logged in
 document.addEventListener("DOMContentLoaded", () => {
   const token = localStorage.getItem("token");
+  const myEventsButton = document.getElementById("myevents");
+  const profileButton = document.getElementById("profile");
+  const dropdown = document.querySelector(".dropdown");
+  const logOut = document.getElementById("logout");
 
   if (token) {
     try {
@@ -107,27 +111,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (userEmail) {
         // Hide login/signup button
-        // const loginSignupButton = document.getElementById("login");
         loginSignupButton.style.display = "none";
         modal.style.display = "none";
 
+        // Show My Events button
+        // only show this as part of dropdown
+        myEventsButton.style.display = "flex"; 
+        logOut.style.display = "flex";    
+
         // Show profile button with the user's email
-        const profileButton = document.getElementById("profile");
         profileButton.style.display = "flex";
         profileButton.textContent = userEmail;
 
-        // const dropdown = emailButton.closest('.dropdown');
-        
+        // Toggle dropdown visibility on click
+        profileButton.addEventListener("click", (e) => {
+          e.preventDefault();
+          dropdown.classList.toggle("show");
+        });
 
-        // Show My Events button
-        //only show this as part of dropdown
-        // const myEventsButton = document.getElementById("myevents");
-        // myEventsButton.style.display = "flex";        
-
-        // Add click listener for profile button to redirect
-        // profileButton.addEventListener("click", () => {
-        //   window.location.href = "/profile.html"; // Redirect to profile page
-        // });
+        // Hide dropdown when clicking outside
+        window.addEventListener("click", (e) => {
+          if (!dropdown.contains(e.target) && !profileButton.contains(e.target)) {
+            dropdown.classList.remove("show");
+          }
+        });
 
         return; // Exit if the token is valid
       }

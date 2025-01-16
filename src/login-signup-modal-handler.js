@@ -130,6 +130,9 @@ document.getElementById("loginForm").addEventListener("submit", async(e) => {
         //remove login/signup popup
         modal.style.display = "none";
 
+        //just reload to trigger DOMContentLoaded handled in main-3d.js instead of having to repeat code
+        location.reload();
+
         // Show My Events button
         //only show this as part of dropdown
         // const myEventsButton = document.getElementById("myevents");
@@ -165,5 +168,5 @@ document.getElementById("loginForm").addEventListener("submit", async(e) => {
   }
 });
 
-//TODO add logout and my events buttons on a drop down from profile button click
-//TODO fix textbox and button sizes auto scaling
+//TODO auto scaling of canvas
+//TODO fix login/signup without css appearing for a brief moment before canvas load during refresh
