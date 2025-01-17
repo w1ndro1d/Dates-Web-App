@@ -1,6 +1,7 @@
 import './style.css'
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { radians } from 'three/tsl';
 
 //define canvas, scene and camera
 const canvas = document.querySelector('#bg');
@@ -9,11 +10,12 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHei
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
 });
+const orbits = [];
 console.log(canvas); // should log the canvas element to console
 
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
-camera.position.setZ(30);
+camera.position.setZ(220);
 
 //add space skybox
 const spaceTexture = new THREE.TextureLoader().load('space-texture.jpg');
@@ -37,10 +39,10 @@ const skyboxMaterial = new THREE.MeshBasicMaterial({
 const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
 
 //define the shape, material and lights for central sphere(sun)
-const sunGeometry = new THREE.SphereGeometry(7, 32, 32);
+const sunGeometry = new THREE.SphereGeometry(50, 32, 32);
 const sunTexture = new THREE.TextureLoader().load('sun-texture.jpg');
 const sunNormalTexture = new THREE.TextureLoader().load('sun-normal-map.jpg');
-const sunMaterial = new THREE.MeshStandardMaterial({map: sunTexture, normalMap: sunNormalTexture, emissive: new THREE.Color(0xFC9601), emissiveIntensity: 0.05,});
+const sunMaterial = new THREE.MeshStandardMaterial({map: sunTexture, normalMap: sunNormalTexture, emissive: new THREE.Color(0xFC9601), emissiveIntensity: 0.05});
 const sun = new THREE.Mesh(sunGeometry, sunMaterial);
 
 const pointLight = new THREE.PointLight(0xFFFFFF);
@@ -60,13 +62,13 @@ const controls = new OrbitControls(camera, renderer.domElement);
 //only allow zooming in and out, no panning
 controls.enablePan = false;
 controls.enableZoom = true;
-controls.minDistance = 15;
+controls.minDistance = 170;
 controls.maxDistance = 500;
 controls.zoomSpeed = 0.4;
 
 function addStars(){
   //define a star
-  const starGeometry = new THREE.SphereGeometry(0.35, 24, 24);
+  const starGeometry = new THREE.SphereGeometry(0.1, 24, 24);
   const starMaterial = new THREE.MeshStandardMaterial({color: 0xFFFFFF});
   const star = new THREE.Mesh(starGeometry, starMaterial);
 
@@ -84,10 +86,18 @@ function animate(){
   requestAnimationFrame(animate);
 
   //spin the sun around, anti-clockwise
-  sun.rotation.x += 0.00001;  //slight tilt along x-axis
+  // sun.rotation.x += 0.00001;  //slight tilt along x-axis
   sun.rotation.y -= 0.00015;
   // sun.rotation.z += 0.0001;
   skybox.rotation.y += 0.00002;
+  
+  //rotate each orbit group
+  orbits.forEach(({orbitGroup, planet}, index) => {
+    const rotationSpeed = 0.0002 + index * 0.002; //vary rotation speed of planet
+    const revolutionSpeed = 0.001 + index * 0.0005; //vary revolution speed of planet
+    planet.rotation.y += rotationSpeed;
+    orbitGroup.rotation.y += revolutionSpeed;
+  });
 
   //for orbit controls
   controls.update();
@@ -97,12 +107,12 @@ function animate(){
 animate()
 
 //logic to show login/signup button if not logged in, show profile button if logged in
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
   const myEventsButton = document.getElementById("myevents");
   const profileButton = document.getElementById("profile");
   const dropdown = document.querySelector(".dropdown");
-  const logOut = document.getElementById("logout");
+  const logoutButton = document.getElementById("logout");
 
   if (token) {
     try {
@@ -117,7 +127,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // Show My Events button
         // only show this as part of dropdown
         myEventsButton.style.display = "flex"; 
-        logOut.style.display = "flex";    
+        logoutButton.style.display = "flex";    
+
+        logoutButton.addEventListener("click", (e) => {
+          localStorage.clear();
+          location.reload();
+        })
 
         // Show profile button with the user's email
         profileButton.style.display = "flex";
@@ -136,6 +151,9 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
 
+        // Populate planets(dates)
+        await PopulateDates(userEmail);
+
         return; // Exit if the token is valid
       }
     } catch (error) {
@@ -152,4 +170,57 @@ document.addEventListener("DOMContentLoaded", () => {
   // Ensure profile button is hidden
   // const profileButton = document.getElementById("profile");
   profileButton.style.display = "none";
+});
+
+// function to populate planets around the sun based on API response(dates and events) with one-to-one mapping
+async function PopulateDates(userEmail){
+  try{
+    const response = await fetch('https://localhost:7275/api/DateDetails/' + userEmail)
+    const events = await response.json();
+    // console.log(events);
+    if(!Array.isArray(events) || events.length === 0){
+      console.error("No corresponding dates found in database!");
+      return;
+    }
+    
+    //generate sphere mesh as planet
+    const planetGeometry = new THREE.SphereGeometry(5, 16, 16);
+    const planetTexture = new THREE.TextureLoader().load('planet-texture.jpg');
+    const planetNormalTexture = new THREE.TextureLoader().load('sun-normal-map.jpg');
+    const planetMaterial = new THREE.MeshStandardMaterial({map: planetTexture, normalMap: planetNormalTexture, emissive: new THREE.Color(0xFC9601), emissiveIntensity: 0.1});
+
+    events.forEach((event, index) => {
+      const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+
+      //create a group to act as orbit center
+      const orbitGroup = new THREE.Group();
+
+      //set planet's position in orbit
+      const orbitalRadius = 150 + index * 50;  //distance from sun
+      planet.position.set(orbitalRadius, 0, 0);
+
+      //add planet to orbit group and orbit group to the scene
+      orbitGroup.add(planet);
+      scene.add(orbitGroup);
+      orbits.push({orbitGroup, planet});
+
+      // //set position in orbit
+      // const x = orbitalRadius * Math.cos(angle);
+      // const z = orbitalRadius * Math.sin(angle);
+      // planet.position.set(x, 0, z);
+
+      //attach event details as metadata
+      planet.userData = {event};
+    })
+  }
+  catch(error){
+    console.error("Error during fetch or no corresponding dates found in database!");
+  }
+}
+
+//dynamically resize canvas with window resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
