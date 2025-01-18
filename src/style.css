@@ -195,9 +195,17 @@ form button:hover {
   gap: 20px;
 }
 
+.profile-button-active {
+  /* background-color: #ccc; */
+  color: black; /* Adjust the text color for contrast */
+  border: 2px solid #ccc; /* Optional: border for better visibility */
+  box-shadow: 0 0 10px white;
+  transition: all 0.1s ease;
+}
+
 #myevents {
   position: relative;
-  top: 25px;
+  top: 27px;
   right: 24px;
   z-index: 10;
   display: flex;
@@ -205,14 +213,35 @@ form button:hover {
   display: flex;
 }
 
+#toggleorbits {
+  position: relative;
+  top: 38px;
+  right: 13px;
+  z-index: 10;
+  display: flex;
+  gap: 20px;
+}
+
+#toggle-orbits-label {
+  position: relative;
+  display: flex;
+  top: 19px;
+  right: -10px;
+  align-items: center;
+  font-size: 18px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
 #logout {
   position: relative;
-  top: 30px;
+  top: 26px;
   right: 24px;
   z-index: 10;
   display: flex;
   gap: 20px;
 }
+
 
 /* Dropdown container */
 .dropdown {
@@ -223,6 +252,14 @@ form button:hover {
   z-index: 10;
   display: flex;
   gap: 20px;
+}
+
+.dropdown-item label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #ffffff;
+  cursor: pointer;
 }
 
 .dropdown-content {
@@ -253,4 +290,31 @@ form button:hover {
 /* Show dropdown when active */
 .dropdown.show .dropdown-content {
   display: block;
+}
+
+.popup {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  z-index: 1000;
+  text-align: center;
+  padding: 20px;
+}
+
+#popup-content {
+  position: relative;
+}
+
+#popup-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 20px;
+  cursor: pointer;
 }

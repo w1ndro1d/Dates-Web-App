@@ -130,7 +130,7 @@ document.getElementById("loginForm").addEventListener("submit", async(e) => {
         //remove login/signup popup
         modal.style.display = "none";
 
-        //just reload to trigger DOMContentLoaded handled in main-3d.js instead of having to repeat code
+        //just reload to trigger DOMContentLoaded handled in main-3d.js instead of having to repeat code here
         location.reload();
 
         // Show My Events button

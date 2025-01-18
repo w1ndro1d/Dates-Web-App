@@ -19,6 +19,7 @@
     <div class="dropdown">
       <a href="#" id="profile" style="display: none;">Profile</a>
       <div class="dropdown-content">
+        <input type="checkbox" id="toggleorbits" checked ><label id="toggle-orbits-label">Show Orbits</label>
         <a href="#" id="myevents" style="display: none;">My Events</a>
         <a href="#" id="logout" style="display: none;">Logout</a>
       </div>
@@ -55,6 +56,14 @@
           <button class="signup-button" type="submit">Sign Up</button>
         </form>
       </div>
+    </div>
+  </div>
+
+  <div id="popup" class="popup">
+    <div id="popup-content">
+      <span id="popup-close">&times;</span>
+      <h3 id="popup-title"></h3>
+      <p id="popup-details"></p>
     </div>
   </div>
 
