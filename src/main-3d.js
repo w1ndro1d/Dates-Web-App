@@ -7,6 +7,7 @@ import { radians, userData } from 'three/tsl';
 const canvas = document.querySelector('#bg');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+// camera.layers.enable(0);
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
 });
@@ -39,6 +40,9 @@ const skyboxMaterial = new THREE.MeshBasicMaterial({
   side: THREE.BackSide  // Render the inside of the cube
 });
 const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
+skybox.raycast = () => {};  //disable raycasting for skybox
+// skybox.layers.set(1); //assign layer 1 to skybox, rest of the objects will be in layer 0(don't want raycaster to get blocked by skybox)
+
 
 //define the shape, material and lights for central sphere(sun)
 const sunGeometry = new THREE.SphereGeometry(50, 32, 32);
@@ -199,14 +203,16 @@ async function PopulateDates(userEmail){
       orbitGroup.add(orbitLine);
 
       //add planet to orbit group and orbit group to the scene
+      //TODO fix orbit lines, show only circles
       orbitGroup.add(planet);
 
       //attach event details as metadata
-      planet.userData = {event};
+      planet.userData = {isPlanet: true, event};
       // console.log(planet.userData.event);
 
       scene.add(orbitGroup);
       orbits.push({orbitGroup, planet, orbitLine});
+      // console.log(planet.position);
 
       // //set position in orbit
       // const x = orbitalRadius * Math.cos(angle);
@@ -243,12 +249,25 @@ function calculateOrbitalRadius(eventDateFromAPI){
   // Define the min and max orbital radii
   const minRadius = 80;  //closest to the sun
   const maxRadius = 200; //farthest from the sun
+
+  let daysDiff = calculateDayDifference(eventDateFromAPI);
+
+  //calculate distance factor based on daysdiff
+  const distanceFactor = Math.max(0, 1-Math.abs(daysDiff) / 365)  //closer dates should have higher distanceFactor
+  // console.log(distanceFactor);
+  // const orbitalRadius = 80 + index * 30;  //distance from sun
+  const orbitalRadius = minRadius + distanceFactor * (maxRadius - minRadius); //set distance from sun based on distanceFactor
+  // console.log(orbitalRadius);
+  return orbitalRadius;
+}
+
+function calculateDayDifference(tillThisDate){
   const today = new Date();  //today's date
 
   //parse event date from API(under key eventDate)
-  const eventDate = new Date(eventDateFromAPI);
-  // console.log(eventDate);
+  const eventDate = new Date(tillThisDate);
 
+  // console.log(eventDate);
   //extract only the month and day for comparison
   const eventMonth = eventDate.getMonth(); // 0-11
   const eventDay = eventDate.getDate(); // 1-31
@@ -282,14 +301,7 @@ function calculateOrbitalRadius(eventDateFromAPI){
     daysDiff += eventDay - todayDay;
   }
   // console.log(daysDiff);
-
-  //calculate distance factor based on daysdiff
-  const distanceFactor = Math.max(0, 1-Math.abs(daysDiff) / 365)  //closer dates should have higher distanceFactor
-  // console.log(distanceFactor);
-  // const orbitalRadius = 80 + index * 30;  //distance from sun
-  const orbitalRadius = minRadius + distanceFactor * (maxRadius - minRadius); //set distance from sun based on distanceFactor
-  // console.log(orbitalRadius);
-  return orbitalRadius;
+  return daysDiff;
 }
 
 
@@ -311,31 +323,39 @@ renderer.domElement.addEventListener("click", (event) => {
 
   //calculate mouse position
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = (event.clientY / window.innerHeight) * 2 + 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
   //create a raycaster
   const raycaster = new THREE.Raycaster();
 
   //set the ray from the camera through the user's mouse position
   raycaster.setFromCamera(mouse, camera);
+  // raycaster.layers.set(0);
 
   //find intersected objects
   const intersects = raycaster.intersectObjects(scene.children, true);
   if (intersects.length > 0) {
-    const clickedPlanet = intersects[0].object;
-    // console.log(clickedPlanet);
+    let clickedPlanet = intersects[0].object;
+    // console.log(intersects);
+    // intersects[0].object.material.color.set(0xff0000); // looks like skybox is being selected every time, must set skybox to a separate layer so raycaster doesn't detect it
+    // console.log(clickedPlanet.userData.isPlanet);
+
+    while(clickedPlanet && !clickedPlanet.userData?.isPlanet){
+      clickedPlanet = clickedPlanet.parent;
+    }
 
     // Check if the clicked object is a planet
-    if (clickedPlanet.userData && clickedPlanet.userData.event) {
-      const eventData = clickedPlanet.userData.event;
-      console.log(eventData);
-
-      // console.log(eventData.event);
-      // console.log(eventData.eventNote);
+    if (clickedPlanet && clickedPlanet.userData.isPlanet) {
+      let planetEventDetails = clickedPlanet.userData.event;
+      // console.log(clickedPlanet.userData.event.event);
+      // console.log(clickedPlanet.userData.event.eventNote);
 
       //show the popup with event details
-      popupTitle.textContent = eventData.event || "Unknown Event";
-      popupDetails.textContent = eventData.eventNote || "No details available.";
+      // console.log(planetEventDetails.eventDate);
+      let daysToGoForEvent = calculateDayDifference(planetEventDetails.eventDate);
+      // console.log(daysToGoForEvent);
+      popupTitle.textContent = planetEventDetails.event +  " (" + daysToGoForEvent + " days left)"|| "Unknown Event";
+      popupDetails.textContent = planetEventDetails.eventNote || "No details available.";
 
       // Show the popup
       popup.style.display = "block";

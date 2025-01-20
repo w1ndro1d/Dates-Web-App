@@ -85,7 +85,7 @@ function decodeToken(token) {
   return JSON.parse(decodedPayload);
 }
 
-
+//TODO fix multiple logins successively due to latency(disable this)
 //login logic
 document.getElementById("loginForm").addEventListener("submit", async(e) => {
   e.preventDefault();
