@@ -194,16 +194,22 @@ async function PopulateDates(userEmail){
       const orbitalRadius = calculateOrbitalRadius(event.eventDate);
       planet.position.set(orbitalRadius, 0 , 0);
 
-      //create orbit lines
-      const orbitGeometry = new THREE.CircleGeometry(orbitalRadius, 64);
-      orbitGeometry.attributes.position.array[0] = 0;
-      const orbitMaterial = new THREE.LineBasicMaterial({color: 0xAAAAAA, transparent: true, opacity: 0.2});
+      //create orbit lines, use EllipseCurve instead of CircleGeometry to prevent visible lines spanning from center to circumference
+      const curve = new THREE.EllipseCurve(
+        0, 0,               // x and y center
+        orbitalRadius, orbitalRadius, // xRadius, yRadius
+        0, 2 * Math.PI,     // Start and end angles
+        false               // Counterclockwise
+      );
+      const pointsForCurve = curve.getPoints(64);
+      const orbitGeometry = new THREE.BufferGeometry().setFromPoints(pointsForCurve);
+      // const orbitGeometry = new THREE.CircleGeometry(orbitalRadius, 64);
+      const orbitMaterial = new THREE.LineBasicMaterial({color: 0xAAAAAA, transparent: true, opacity: 0.3});
       const orbitLine = new THREE.LineLoop(orbitGeometry, orbitMaterial);
       orbitLine.rotation.x = Math.PI/2; //align orbit line to x-z plane
       orbitGroup.add(orbitLine);
 
       //add planet to orbit group and orbit group to the scene
-      //TODO fix orbit lines, show only circles
       orbitGroup.add(planet);
 
       //attach event details as metadata
@@ -253,10 +259,10 @@ function calculateOrbitalRadius(eventDateFromAPI){
   let daysDiff = calculateDayDifference(eventDateFromAPI);
 
   //calculate distance factor based on daysdiff
-  const distanceFactor = Math.max(0, 1-Math.abs(daysDiff) / 365)  //closer dates should have higher distanceFactor
+  const distanceFactor = Math.max(0, 1-Math.abs(daysDiff) / 365)  //farther dates should have higher distanceFactor
   // console.log(distanceFactor);
   // const orbitalRadius = 80 + index * 30;  //distance from sun
-  const orbitalRadius = minRadius + distanceFactor * (maxRadius - minRadius); //set distance from sun based on distanceFactor
+  const orbitalRadius = maxRadius - distanceFactor * (maxRadius - minRadius); //set distance from sun based on distanceFactor
   // console.log(orbitalRadius);
   return orbitalRadius;
 }
