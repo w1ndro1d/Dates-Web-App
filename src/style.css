@@ -295,16 +295,33 @@ form button:hover {
 .popup {
   display: none;
   position: fixed;
-  top: 50%;
-  left: 50%;
+  top: 86%;
+  left: 86%;
   transform: translate(-50%, -50%);
-  width: 300px;
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
+  width: 350px;
+  background: radial-gradient(circle, #121212, #0d0d3c, #000);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 100, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
   z-index: 1000;
   text-align: center;
   padding: 20px;
+  color: #f0f0f0;
+  font-family: 'Poppins', sans-serif;
+}
+
+#popup-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ee891d;
+  margin-bottom: 15px;
+}
+
+#popup-details {
+  font-size: 14px;
+  color: #cdb8b8;
+  margin-bottom: 20px;
+  line-height: 1.5;
 }
 
 #popup-content {
@@ -313,8 +330,40 @@ form button:hover {
 
 #popup-close {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: -33px;
+  right: -10px;
   font-size: 20px;
   cursor: pointer;
+}
+
+#popup-close:hover {
+  transform: scale(1.1);
+}
+
+.popup::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, transparent, rgba(230, 0, 0, 0.05), transparent);
+  pointer-events: none;
+  border-radius: 15px;
+}
+
+.popup-glow {
+  animation: pulseGlow 3s infinite;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 15px rgba(100, 100, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(100, 100, 255, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(100, 100, 255, 0.4);
+  }
 }

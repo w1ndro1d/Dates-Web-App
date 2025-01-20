@@ -17,8 +17,8 @@ const orbits = [];
 
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
-camera.position.setZ(220);
-camera.position.setY(15);
+camera.position.setZ(200);
+camera.position.setY(25);
 
 //add space skybox
 const spaceTexture = new THREE.TextureLoader().load('space-texture.jpg');
@@ -69,7 +69,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enablePan = false;
 controls.enableZoom = true;
 controls.minDistance = 170;
-controls.maxDistance = 500;
+controls.maxDistance = 370;
 controls.zoomSpeed = 0.4;
 
 function addStars(){
@@ -356,6 +356,7 @@ renderer.domElement.addEventListener("click", (event) => {
       // console.log(clickedPlanet.userData.event.event);
       // console.log(clickedPlanet.userData.event.eventNote);
 
+      //TODO set popup title colour based on how close the event is(red for close, green for further out)
       //show the popup with event details
       // console.log(planetEventDetails.eventDate);
       let daysToGoForEvent = calculateDayDifference(planetEventDetails.eventDate);
