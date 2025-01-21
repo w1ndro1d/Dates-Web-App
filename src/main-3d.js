@@ -201,7 +201,7 @@ async function PopulateDates(userEmail){
         0, 2 * Math.PI,     // Start and end angles
         false               // Counterclockwise
       );
-      const pointsForCurve = curve.getPoints(64);
+      const pointsForCurve = curve.getPoints(128);
       const orbitGeometry = new THREE.BufferGeometry().setFromPoints(pointsForCurve);
       // const orbitGeometry = new THREE.CircleGeometry(orbitalRadius, 64);
       const orbitMaterial = new THREE.LineBasicMaterial({color: 0xAAAAAA, transparent: true, opacity: 0.3});
