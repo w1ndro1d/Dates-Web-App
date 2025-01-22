@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { radians, userData } from 'three/tsl';
 
+let selectedPlanet = null;
+
 //define canvas, scene and camera
 const canvas = document.querySelector('#bg');
 const scene = new THREE.Scene();
@@ -213,8 +215,8 @@ async function PopulateDates(userEmail){
       orbitGroup.add(planet);
 
       //attach event details as metadata
-      planet.userData = {isPlanet: true, event};
-      // console.log(planet.userData.event);
+      planet.userData = {isPlanet: true, radius: 3, event}; //set key for default radius to 3, will update later via slider
+      // console.log(planet.userData);
 
       scene.add(orbitGroup);
       orbits.push({orbitGroup, planet, orbitLine});
@@ -317,6 +319,10 @@ const popupTitle = document.getElementById("popup-title");
 const popupDetails = document.getElementById("popup-details");
 const popupClose = document.getElementById("popup-close");
 
+const slider = document.getElementById('popup-slider');
+const decrease = document.getElementById('slider-decrease');
+const increase = document.getElementById('slider-increase');
+
 //close popup function
 popupClose.addEventListener("click", () => {
   popup.style.display = "none";
@@ -352,6 +358,7 @@ renderer.domElement.addEventListener("click", (event) => {
 
     // Check if the clicked object is a planet
     if (clickedPlanet && clickedPlanet.userData.isPlanet) {
+      selectedPlanet = clickedPlanet; //store the clicked planet globally for future reference
       let planetEventDetails = clickedPlanet.userData.event;
       // console.log(clickedPlanet.userData.event.event);
       // console.log(clickedPlanet.userData.event.eventNote);
@@ -366,10 +373,52 @@ renderer.domElement.addEventListener("click", (event) => {
 
       // Show the popup
       popup.style.display = "block";
+      // console.log(clickedPlanet.userData.radius);
+      slider.value = clickedPlanet.userData.radius;
     }
   }
 })
 
+//----------------------------event details popup slider controls---------------------------------------------
+decrease.addEventListener('click', () => {
+    slider.value = Math.max(slider.min, slider.value - 1);
+    adjustPlanetSizes();
+});
+
+increase.addEventListener('click', () => {
+    slider.value = Math.min(slider.max, Number(slider.value) + 1);
+    adjustPlanetSizes();
+});
+
+//also change size with slider thumb
+slider.addEventListener('input', adjustPlanetSizes);
+
+//thought of just changing scale after slider is adjusted but that introduced inconsistencies in sphere sizes, depending on position of planet in its orbit
+//so need to recreate sphere geometry with the new radius and replace the existing one after each resize, done inside fxn setPlanetRadiusForResize
+function adjustPlanetSizes(){
+  if(selectedPlanet){
+    const newSize = parseFloat(slider.value);
+    setPlanetRadiusForResize(selectedPlanet, newSize);
+    // console.log(newSize);
+  }
+}
+
+function setPlanetRadiusForResize(planet, radius) {
+  if (radius <= 0) return;
+  const material = planet.material;
+
+  // dispose of the old geometry to free up memory
+  if (planet.geometry) planet.geometry.dispose();
+
+  // create new geometry with the selected radius
+  const newGeometry = new THREE.SphereGeometry(radius, 16, 16);
+  planet.geometry = newGeometry;
+  planet.material = material;
+
+  //set userdata radius to new value, so slider values and planet radii are in sync
+  planet.userData.radius = radius;
+}
+//-----------------------------------------slider controls-----------------------------------------------------
 
 //animation loop
 function animate(){
@@ -385,7 +434,7 @@ function animate(){
   
   orbits.forEach(({orbitGroup, planet}, index) => {
     const rotationSpeed = 0.0002 + index * 0.0002; //vary rotation speed of planet
-    const revolutionSpeed = 0.0001 + index * 0.0001; //vary revolution speed of planet
+    const revolutionSpeed = 0.0001 + ((9 - planet.userData.radius) * 0.0001); //vary revolution speed of planet, larger planet should revolve slower
     planet.rotation.y += rotationSpeed;
     orbitGroup.rotation.y += revolutionSpeed;
   });
