@@ -68,17 +68,19 @@ canvas {
 }
 
 .modal-content {
-  background-color: #ffffff;
-  border-radius: 10px;
-  padding: 20px;
+  padding: 10px;
   width: 95%;
   max-width: 400px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   position: relative;
+  background: radial-gradient(circle, #121212, #0d0d3c, #000);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 100, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
 }
 
+/* removed x button, re-enable css to show. not really needed */
 /* Close Button */
-#closeModal {
+/* #closeModal {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -89,7 +91,8 @@ canvas {
 
 #closeModal:hover {
   color: black;
-}
+} */
+/* Close Button */
 
 /* Tab Links */
 .tab {
@@ -101,23 +104,25 @@ canvas {
 .tablinks {
   padding: 8px 16px;
   margin: 0 3px;
-  border: none;
-  background-color: #f4f4f9;
   color: #555;
   cursor: pointer;
   border-radius: 5px;
   font-size: 14px;
   width: 45%;
   transition: background-color 0.3s, color 0.3s;
+  background: radial-gradient(circle, #121212, #0d0d3c, #000);
+  /* box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 100, 255, 0.4); */
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
 }
 
 .tablinks.active {
-  background-color: #007BFF;
+  /* background-color: #2e3dc6;; */
   color: white;
 }
 
 .tablinks:hover {
-  background-color: #0056b3;
+  /* background-color: #ee891d;; */
   color: white;
 }
 
@@ -155,27 +160,29 @@ form input {
 
 form button {
   padding: 8px;
-  border: none;
-  background-color: #4CAF50;
   color: white;
-  border-radius: 5px;
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.3s;
   width: 100%;
+  background: radial-gradient(circle, #121212, #0d0d3c, #000);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 100, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
 }
 
-form button:hover {
+/* form button:hover {
   background-color: #45a049;
-}
+} */
 
+/* TODO login and create account buttons are not exactly centered */
 .login-button{
   width: 20%;
   align-self: center;
 }
 
 .signup-button{
-  width: 25%;
+  width: 37%;
   align-self: center;
 }
 
@@ -301,13 +308,14 @@ form button:hover {
   width: 350px;
   background: radial-gradient(circle, #121212, #0d0d3c, #000);
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 100, 255, 0.4);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 15px;
   z-index: 1000;
   text-align: center;
   padding: 20px;
   color: #f0f0f0;
   font-family: 'Poppins', sans-serif;
+  opacity: 96%;
 }
 
 #popup-title {
@@ -414,4 +422,81 @@ form button:hover {
   border-radius: 50%;
   border: 2px solid #fff;
   cursor: pointer;
+}
+
+
+.myeventspopup {
+  display: none;
+  position: fixed;
+  /* transform: translate(-50%, -50%); */
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(circle, #121212, #0d0d3c, #000);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 100, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  opacity: 96%;
+  z-index: 1000;
+  text-align: center;
+  padding: 20px;
+  color: #f0f0f0;
+  font-family: 'Poppins', sans-serif;
+}
+
+#myevents-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* #myevents-popup-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 20px;
+  color: white;
+  cursor: pointer;
+} */
+
+/* #myevents-popup-close:hover {
+  transform: scale(1.1);
+} */
+
+#myevents-popup-new-btn {
+  position: absolute;
+  color: #fff;
+  left: 130px;
+  padding: 10px 15px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'Poppins', sans-serif;
+  background: radial-gradient(circle, #121212, #0d0d3c, #000);
+  /* box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 100, 255, 0.4); */
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+}
+
+#myevents-popup-done-btn {
+  position: absolute;
+  color: #fff;
+  left: 740px;
+  padding: 10px 15px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'Poppins', sans-serif;
+  background: radial-gradient(circle, #121212, #0d0d3c, #000);
+  /* box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 100, 255, 0.4); */
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+}
+
+
+/* #myevents-popup-new-btn:hover {
+  background-color: #0056b3;
+} */
+
+#myevents-popup-buttons {
+  display: flex;
+  justify-content: space-between;
 }

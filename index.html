@@ -34,7 +34,7 @@
 
       <!-- Tab Links (optional) -->
       <div class="tab">
-        <button class="tablinks" onclick="openTab(event, 'LoginForm')" id="defaultOpen">Login</button>
+        <button class="tablinks" onclick="openTab(event, 'LoginForm')" id="defaultOpen">Sign In</button>
         <button class="tablinks" onclick="openTab(event, 'SignupForm')">Sign Up</button>
       </div>
 
@@ -53,7 +53,7 @@
           <input type="email" placeholder="Email" required><br>
           <input type="password" placeholder="Password" required><br>
           <input type="password" placeholder="Confirm Password" required><br>
-          <button class="signup-button" type="submit">Sign Up</button>
+          <button class="signup-button" type="submit">Create Account</button>
         </form>
       </div>
     </div>
@@ -69,6 +69,34 @@
         <input id="popup-slider" type="range" min="3" max="8" step="0.1" value="3" />
         <span id="slider-increase">+</span>
     </div>
+    </div>
+  </div>
+
+  <div id="myeventspopup" class="myeventspopup">
+    <div id="myevents-popup-content">
+      <!-- <span id="myevents-popup-close">&times;</span> -->
+      <div id="myevents-popup-header">
+        <h3 id="myevents-popup-title">My Events</h3>
+        <button id="myevents-popup-new-btn">Add new event</button>
+        <button id="myevents-popup-done-btn">Done</button>
+      </div>
+      <table id="myevents-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Event</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Rows will be dynamically generated -->
+        </tbody>
+      </table>
+      <div id="myevents-popup-buttons">
+        
+        <button id="myevents-popup-edit-btn">Edit</button>
+        <button id="myevents-popup-delete-btn">Delete</button>
+      </div>
     </div>
   </div>
 

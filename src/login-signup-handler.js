@@ -110,7 +110,7 @@ document.getElementById("loginForm").addEventListener("submit", async(e) => {
   if(response.ok){
     const {token} = await response.json();
     localStorage.setItem("token", token);
-    alert("Login Successful!");
+    // alert("Login Successful!");
     // window.location.href = "/dashboard.html";
     modal.style.display = "none";
 

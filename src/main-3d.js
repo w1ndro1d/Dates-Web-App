@@ -98,6 +98,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const logoutButton = document.getElementById("logout");
   const toggleOrbitsCheckbox = document.getElementById("toggleorbits")
 
+  const myEventsPopupWindow = document.getElementById("myeventspopup");
+  const myEventsPopupCloseButton = document.getElementById("myevents-popup-done-btn");
+
   if (token) {
     try {
       const decodedToken = decodeToken(token);
@@ -112,7 +115,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         // only show this as part of dropdown
         myEventsButton.style.display = "flex"; 
         toggleOrbitsCheckbox.display = "flex";
-        logoutButton.style.display = "flex";    
+        logoutButton.style.display = "flex";
+        
+        myEventsButton.addEventListener("click", (e) => {
+          myEventsPopupWindow.style.display = "flex";
+          // popup.style.display = "none";
+        })
+
+        myEventsPopupCloseButton.addEventListener("click", () => {
+          myEventsPopupWindow.style.display = "none";
+        });
 
         logoutButton.addEventListener("click", (e) => {
           localStorage.clear();
@@ -326,7 +338,7 @@ const increase = document.getElementById('slider-increase');
 //close popup function
 popupClose.addEventListener("click", () => {
   popup.style.display = "none";
-})
+});
 
 //event listener for clicks on planet spheres
 //3js doesn't support native event listeners for meshes, so we need to use a raycaster to project a ray from mouse position into our 3d space and check if it intersects with our objects(planets in this case)
