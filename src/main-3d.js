@@ -8,7 +8,7 @@ let selectedPlanet = null;
 //define canvas, scene and camera
 const canvas = document.querySelector('#bg');
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 // camera.layers.enable(0);
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
@@ -42,7 +42,7 @@ const skyboxMaterial = new THREE.MeshBasicMaterial({
   side: THREE.BackSide  // Render the inside of the cube
 });
 const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
-skybox.raycast = () => {};  //disable raycasting for skybox
+skybox.raycast = () => { };  //disable raycasting for skybox
 // skybox.layers.set(1); //assign layer 1 to skybox, rest of the objects will be in layer 0(don't want raycaster to get blocked by skybox)
 
 
@@ -50,11 +50,11 @@ skybox.raycast = () => {};  //disable raycasting for skybox
 const sunGeometry = new THREE.SphereGeometry(50, 32, 32);
 const sunTexture = new THREE.TextureLoader().load('sun-texture.jpg');
 const sunNormalTexture = new THREE.TextureLoader().load('sun-normal-map.jpg');
-const sunMaterial = new THREE.MeshStandardMaterial({map: sunTexture, normalMap: sunNormalTexture, emissive: new THREE.Color(0xFC9601), emissiveIntensity: 0.05});
+const sunMaterial = new THREE.MeshStandardMaterial({ map: sunTexture, normalMap: sunNormalTexture, emissive: new THREE.Color(0xFC9601), emissiveIntensity: 0.05 });
 const sun = new THREE.Mesh(sunGeometry, sunMaterial);
 
 const pointLight = new THREE.PointLight(0xFFFFFF);
-pointLight.position.set(10,10,10);
+pointLight.position.set(10, 10, 10);
 const ambientLight = new THREE.AmbientLight(0xFFFFFF);
 
 //add helpers
@@ -74,15 +74,15 @@ controls.minDistance = 170;
 controls.maxDistance = 370;
 controls.zoomSpeed = 0.4;
 
-function addStars(){
+function addStars() {
   //define a star
   const starGeometry = new THREE.SphereGeometry(0.1, 24, 24);
-  const starMaterial = new THREE.MeshStandardMaterial({color: 0xFFFFFF});
+  const starMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
   const star = new THREE.Mesh(starGeometry, starMaterial);
 
   //define random positions for stars
-  const[x,y,z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(700));
-  star.position.set(x,y,z);
+  const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(700));
+  star.position.set(x, y, z);
   scene.add(star);
 }
 //add 1000 stars
@@ -113,13 +113,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Show My Events button
         // only show this as part of dropdown
-        myEventsButton.style.display = "flex"; 
+        myEventsButton.style.display = "flex";
         toggleOrbitsCheckbox.display = "flex";
         logoutButton.style.display = "flex";
-        
-        myEventsButton.addEventListener("click", (e) => {
+
+        myEventsButton.addEventListener("click", async (e) => {
           myEventsPopupWindow.style.display = "flex";
-          // popup.style.display = "none";
+          popup.style.display = "none";
+
+          //populate popup
+          let events = await fetchResponse(userEmail);
+          populateEventsTable(events);
+          dropdown.classList.remove("show");
+          profileButton.classList.remove("profile-button-active");
+          // console.log(events);
         })
 
         myEventsPopupCloseButton.addEventListener("click", () => {
@@ -140,13 +147,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           e.preventDefault();
 
           const isDropDownVisible = dropdown.style.display === "inline-block";
-          if(isDropDownVisible){
+          if (isDropDownVisible) {
             profileButton.classList.remove("profile-button-active");
           }
-          else{
+          else {
             profileButton.classList.add("profile-button-active");
           }
-          
+
           dropdown.classList.toggle("show");
         });
 
@@ -179,18 +186,107 @@ document.addEventListener("DOMContentLoaded", async () => {
   profileButton.style.display = "none";
 });
 
-
-
-// function to populate planets around the sun based on API response(dates and events) with one-to-one mapping
-async function PopulateDates(userEmail){
-  try{
+async function fetchResponse(userEmail) {
+  try {
     const response = await fetch('https://localhost:7275/api/DateDetails/' + userEmail)
     const events = await response.json();
     // console.log(events);
-    if(!Array.isArray(events) || events.length === 0){
+    if (!Array.isArray(events) || events.length === 0) {
       console.error("No corresponding dates found in database!");
       return;
     }
+    return events;
+  }
+  catch (error) {
+    console.error("Error during fetch or no corresponding dates found in database!");
+  }
+}
+
+function populateEventsTable(events) {
+  const eventsTableBody = document.querySelector("#myevents-table tbody");
+  eventsTableBody.innerHTML = "";
+
+  //loop through events and add rows
+  events.forEach(event => {
+    const row = document.createElement("tr");
+
+    //create cells for each field
+    const eventDateCell = document.createElement("td");
+    eventDateCell.textContent = new Date(event.eventDate).toISOString().split('T')[0];
+
+    const eventTitleCell = document.createElement("td");
+    eventTitleCell.textContent = event.event;
+
+    const eventNoteCell = document.createElement("td");
+    eventNoteCell.textContent = event.eventNote;
+
+    const eventDaysLeft = document.createElement("td");
+    eventDaysLeft.textContent = calculateDayDifference(event.eventDate);
+
+    //create action buttons
+    const actionCell = document.createElement("td");
+
+    const editButton = document.createElement("button");
+    //set properties
+    editButton.id = "myevents-popup-edit-btn";
+    editButton.textContent = "Edit";
+    // editButton.addEventListener("click", () => editEvent(event));
+
+    const deleteButton = document.createElement("button");
+    //set properties
+    deleteButton.id = "myevents-popup-delete-btn";
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", async () => deleteEvent(event));
+
+    actionCell.appendChild(editButton);
+    actionCell.appendChild(deleteButton);
+
+    // Append cells to the row
+    row.appendChild(eventDateCell);
+    row.appendChild(eventTitleCell);
+    row.appendChild(eventNoteCell);
+    row.appendChild(eventDaysLeft);
+    row.appendChild(actionCell);
+
+    // Append the row to the table body
+    eventsTableBody.appendChild(row);
+  })
+}
+
+async function deleteEvent(event) {
+  // console.log(event.eventNote);
+  if (!confirm(`Are you sure you want to delete the event: ${event.event}?`)) {
+    return;
+  };
+  try {
+    const response = await fetch(`https://localhost:7275/api/DateDetails/${event.dateId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    // console.log(response);
+    if (response.ok) {
+      //delete from myevents popup and db
+      // event.target.closest("tr").remove();
+      // console.log(event.target.closest("tr"));
+      alert("Event deleted!");
+    }
+    else {
+      alert("Failed to delete event!");
+    }
+  }
+  catch (error) {
+    console.error("Error deleting event:", error);
+    alert("An error occurred while deleting the event.");
+  }
+
+}
+
+// function to populate planets around the sun based on API response(dates and events) with one-to-one mapping
+async function PopulateDates(userEmail) {
+  try {
+    let events = await fetchResponse(userEmail);
 
     //TODO adjust planet's size based on importance of date to user
     //TODO allow users to add custom images as map texture to planets
@@ -198,7 +294,7 @@ async function PopulateDates(userEmail){
     const planetGeometry = new THREE.SphereGeometry(3, 16, 16);
     const planetTexture = new THREE.TextureLoader().load('planet-texture.jpg');
     const planetNormalTexture = new THREE.TextureLoader().load('sun-normal-map.jpg');
-    const planetMaterial = new THREE.MeshStandardMaterial({map: planetTexture, normalMap: planetNormalTexture, emissive: new THREE.Color(0xFC9601), emissiveIntensity: 0.1});
+    const planetMaterial = new THREE.MeshStandardMaterial({ map: planetTexture, normalMap: planetNormalTexture, emissive: new THREE.Color(0xFC9601), emissiveIntensity: 0.1 });
 
     events.forEach((event, index) => {
       const planet = new THREE.Mesh(planetGeometry, planetMaterial);
@@ -206,7 +302,7 @@ async function PopulateDates(userEmail){
       //create a group to act as orbit center
       const orbitGroup = new THREE.Group();
       const orbitalRadius = calculateOrbitalRadius(event.eventDate);
-      planet.position.set(orbitalRadius, 0 , 0);
+      planet.position.set(orbitalRadius, 0, 0);
 
       //create orbit lines, use EllipseCurve instead of CircleGeometry to prevent visible lines spanning from center to circumference
       const curve = new THREE.EllipseCurve(
@@ -218,20 +314,20 @@ async function PopulateDates(userEmail){
       const pointsForCurve = curve.getPoints(128);
       const orbitGeometry = new THREE.BufferGeometry().setFromPoints(pointsForCurve);
       // const orbitGeometry = new THREE.CircleGeometry(orbitalRadius, 64);
-      const orbitMaterial = new THREE.LineBasicMaterial({color: 0xAAAAAA, transparent: true, opacity: 0.3});
+      const orbitMaterial = new THREE.LineBasicMaterial({ color: 0xAAAAAA, transparent: true, opacity: 0.3 });
       const orbitLine = new THREE.LineLoop(orbitGeometry, orbitMaterial);
-      orbitLine.rotation.x = Math.PI/2; //align orbit line to x-z plane
+      orbitLine.rotation.x = Math.PI / 2; //align orbit line to x-z plane
       orbitGroup.add(orbitLine);
 
       //add planet to orbit group and orbit group to the scene
       orbitGroup.add(planet);
 
       //attach event details as metadata
-      planet.userData = {isPlanet: true, radius: 3, event}; //set key for default radius to 3, will update later via slider
+      planet.userData = { isPlanet: true, radius: 3, event }; //set key for default radius to 3, will update later via slider
       // console.log(planet.userData);
 
       scene.add(orbitGroup);
-      orbits.push({orbitGroup, planet, orbitLine});
+      orbits.push({ orbitGroup, planet, orbitLine });
       // console.log(planet.position);
 
       // //set position in orbit
@@ -245,13 +341,13 @@ async function PopulateDates(userEmail){
     toggleCheckbox.addEventListener('change', (event) => {
       const visible = event.target.checked;
       // console.log(visible);
-      orbits.forEach(({orbitLine}) => {
+      orbits.forEach(({ orbitLine }) => {
         orbitLine.visible = visible;
       })
     });
   }
-  catch(error){
-    console.error("Error during fetch or no corresponding dates found in database!");
+  catch (error) {
+    console.error("Error during fetch or no corresponding dates found in database!" + error);
   }
 }
 
@@ -265,7 +361,7 @@ window.addEventListener('resize', () => {
 
 
 //calculate orbitalRadius and return it to populate planets around the sun
-function calculateOrbitalRadius(eventDateFromAPI){
+function calculateOrbitalRadius(eventDateFromAPI) {
   // Define the min and max orbital radii
   const minRadius = 80;  //closest to the sun
   const maxRadius = 200; //farthest from the sun
@@ -273,7 +369,7 @@ function calculateOrbitalRadius(eventDateFromAPI){
   let daysDiff = calculateDayDifference(eventDateFromAPI);
 
   //calculate distance factor based on daysdiff
-  const distanceFactor = Math.max(0, 1-Math.abs(daysDiff) / 365)  //farther dates should have higher distanceFactor
+  const distanceFactor = Math.max(0, 1 - Math.abs(daysDiff) / 365)  //farther dates should have higher distanceFactor
   // console.log(distanceFactor);
   // const orbitalRadius = 80 + index * 30;  //distance from sun
   const orbitalRadius = maxRadius - distanceFactor * (maxRadius - minRadius); //set distance from sun based on distanceFactor
@@ -281,7 +377,7 @@ function calculateOrbitalRadius(eventDateFromAPI){
   return orbitalRadius;
 }
 
-function calculateDayDifference(tillThisDate){
+function calculateDayDifference(tillThisDate) {
   const today = new Date();  //today's date
 
   //parse event date from API(under key eventDate)
@@ -364,7 +460,7 @@ renderer.domElement.addEventListener("click", (event) => {
     // intersects[0].object.material.color.set(0xff0000); // looks like skybox is being selected every time, must set skybox to a separate layer so raycaster doesn't detect it
     // console.log(clickedPlanet.userData.isPlanet);
 
-    while(clickedPlanet && !clickedPlanet.userData?.isPlanet){
+    while (clickedPlanet && !clickedPlanet.userData?.isPlanet) {
       clickedPlanet = clickedPlanet.parent;
     }
 
@@ -380,7 +476,7 @@ renderer.domElement.addEventListener("click", (event) => {
       // console.log(planetEventDetails.eventDate);
       let daysToGoForEvent = calculateDayDifference(planetEventDetails.eventDate);
       // console.log(daysToGoForEvent);
-      popupTitle.textContent = planetEventDetails.event +  " (" + daysToGoForEvent + " days left)"|| "Unknown Event";
+      popupTitle.textContent = planetEventDetails.event + " (" + daysToGoForEvent + " days left)" || "Unknown Event";
       popupDetails.textContent = planetEventDetails.eventNote || "No details available.";
 
       // Show the popup
@@ -393,13 +489,13 @@ renderer.domElement.addEventListener("click", (event) => {
 
 //----------------------------event details popup slider controls---------------------------------------------
 decrease.addEventListener('click', () => {
-    slider.value = Math.max(slider.min, slider.value - 1);
-    adjustPlanetSizes();
+  slider.value = Math.max(slider.min, slider.value - 1);
+  adjustPlanetSizes();
 });
 
 increase.addEventListener('click', () => {
-    slider.value = Math.min(slider.max, Number(slider.value) + 1);
-    adjustPlanetSizes();
+  slider.value = Math.min(slider.max, Number(slider.value) + 1);
+  adjustPlanetSizes();
 });
 
 //also change size with slider thumb
@@ -407,8 +503,8 @@ slider.addEventListener('input', adjustPlanetSizes);
 
 //thought of just changing scale after slider is adjusted but that introduced inconsistencies in sphere sizes, depending on position of planet in its orbit
 //so need to recreate sphere geometry with the new radius and replace the existing one after each resize, done inside fxn setPlanetRadiusForResize
-function adjustPlanetSizes(){
-  if(selectedPlanet){
+function adjustPlanetSizes() {
+  if (selectedPlanet) {
     const newSize = parseFloat(slider.value);
     setPlanetRadiusForResize(selectedPlanet, newSize);
     // console.log(newSize);
@@ -433,7 +529,7 @@ function setPlanetRadiusForResize(planet, radius) {
 //-----------------------------------------slider controls-----------------------------------------------------
 
 //animation loop
-function animate(){
+function animate() {
   requestAnimationFrame(animate);
 
   //spin the sun around, anti-clockwise
@@ -441,10 +537,10 @@ function animate(){
   sun.rotation.y -= 0.00015;
   // sun.rotation.z += 0.0001;
   skybox.rotation.y += 0.00002;
-  
+
   //rotate each orbit group
-  
-  orbits.forEach(({orbitGroup, planet}, index) => {
+
+  orbits.forEach(({ orbitGroup, planet }, index) => {
     const rotationSpeed = 0.0002 + index * 0.0002; //vary rotation speed of planet
     const revolutionSpeed = 0.0001 + ((9 - planet.userData.radius) * 0.0001); //vary revolution speed of planet, larger planet should revolve slower
     planet.rotation.y += rotationSpeed;

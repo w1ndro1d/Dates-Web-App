@@ -447,7 +447,7 @@ form button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 13px;
 }
 
 /* #myevents-popup-close {
@@ -480,7 +480,7 @@ form button {
 #myevents-popup-done-btn {
   position: absolute;
   color: #fff;
-  left: 740px;
+  left: 747px;
   padding: 10px 15px;
   cursor: pointer;
   font-size: 16px;
@@ -491,12 +491,96 @@ form button {
   border-radius: 15px;
 }
 
+/* TODO hover over buttons should set border: 1px solid #ddd; */
+/* do this for all action buttons */
+#myevents-popup-edit-btn {
+  /* position: absolute; */
+  color: #fff;
+  /* left: 670px; */
+  /* top: 132px; */
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'Poppins', sans-serif;
+  background: radial-gradient(circle, #121212, #0d0d3c, #000);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 100, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  text-align: left;
+  /* border: 1px solid #ddd; */
+  vertical-align: middle; /* Aligns content vertically */
+}
+
+#myevents-popup-delete-btn {
+  /* position: absolute; */
+  color: #fff;
+  /* left: 740px; */
+  padding: 7px 11px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'Poppins', sans-serif;
+  background: radial-gradient(circle, #121212, #0d0d3c, #000);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 100, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  text-align: left;
+  /* border: 1px solid #ddd; */
+  vertical-align: middle; /* Aligns content vertically */
+}
+
 
 /* #myevents-popup-new-btn:hover {
   background-color: #0056b3;
 } */
 
-#myevents-popup-buttons {
+/* #myevents-popup-buttons {
   display: flex;
   justify-content: space-between;
+} */
+
+#myevents-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* Ensures consistent column width */
+}
+
+#myevents-table th,
+#myevents-table td {
+  padding: 7px;
+  text-align: left;
+  border: 1px solid #ddd;
+  vertical-align: middle;
+}
+
+#myevents-table th:nth-child(1), /* Date column */
+#myevents-table td:nth-child(1) {
+  width: 10%;
+}
+
+#myevents-table th:nth-child(2), /* Event column */
+#myevents-table td:nth-child(2) {
+  width: 21%;
+}
+
+#myevents-table th:nth-child(3), /* Description column */
+#myevents-table td:nth-child(3) {
+  width: 35%;
+}
+
+#myevents-table th:nth-child(4), /* Days Left column */
+#myevents-table td:nth-child(4) {
+  width: 5%;
+}
+
+#myevents-table th:nth-child(5), /* Actions column */
+#myevents-table td:nth-child(5) {
+  width: 9%;
+}
+
+#myevents-table-container {
+  max-height: 525px;
+  overflow-y: auto; /* enable vertical scrolling when content overflows */
+  overflow-x: hidden; /* hide horizontal scrollbar unless necessary */
+  border: 1px solid #ddd; /* Optional: Add a border to define the container */
+  padding: 0;
 }
