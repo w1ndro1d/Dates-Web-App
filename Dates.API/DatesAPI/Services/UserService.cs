@@ -66,6 +66,8 @@ namespace DatesAPI.Services
                 {
                     new Claim(ClaimTypes.Name, user.Email.ToString())
                 }),
+                Issuer = _configuration["Jwt:Issuer"],
+                Audience = _configuration["Jwt:Audience"],
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
