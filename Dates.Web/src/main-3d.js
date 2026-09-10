@@ -1,4 +1,3 @@
-import './style.css'
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { radians, userData } from 'three/tsl';
@@ -54,6 +53,96 @@ function getVisibleEvents() {
   return allEvents;
 }
 
+function getPlanetBandForOrbit(orbitalRadius) {
+  const solarSystemPalette = [
+    0xb9bbb3, // Mercury
+    0xf0b347, // Venus
+    0x378fe8, // Earth
+    0xe0523d, // Mars
+    0xe18a4f, // Jupiter
+    0xf0cc72, // Saturn
+    0x56dce8, // Uranus
+    0x3f70f2  // Neptune
+  ];
+  const normalizedDistance = THREE.MathUtils.clamp((orbitalRadius - 80) / 120, 0, 0.999);
+  return {
+    index: Math.floor(normalizedDistance * solarSystemPalette.length),
+    color: new THREE.Color(solarSystemPalette[Math.floor(normalizedDistance * solarSystemPalette.length)])
+  };
+}
+
+const planetTextureCache = new Map();
+
+function getPlanetTexture(planetIndex) {
+  if (planetTextureCache.has(planetIndex)) {
+    return planetTextureCache.get(planetIndex);
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  const profiles = [
+    { base: '#8b8d88', detail: '#4f514e', pattern: 'craters' },
+    { base: '#d49b4d', detail: '#f0c878', pattern: 'clouds' },
+    { base: '#1768b0', detail: '#4caf68', pattern: 'earth' },
+    { base: '#a94235', detail: '#e27a47', pattern: 'craters' },
+    { base: '#b56d42', detail: '#f0c08a', pattern: 'bands' },
+    { base: '#d5b875', detail: '#f0dca9', pattern: 'bands' },
+    { base: '#55bdc8', detail: '#a8e5e8', pattern: 'bands' },
+    { base: '#2448a2', detail: '#5986e0', pattern: 'bands' }
+  ][planetIndex];
+
+  context.fillStyle = profiles.base;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (profiles.pattern === 'bands') {
+    for (let y = 0; y < canvas.height; y += 14) {
+      context.fillStyle = y % 28 === 0 ? profiles.detail : profiles.base;
+      context.globalAlpha = y % 28 === 0 ? 0.7 : 0.35;
+      context.fillRect(0, y, canvas.width, 8 + (y % 9));
+    }
+  } else if (profiles.pattern === 'earth') {
+    context.fillStyle = profiles.detail;
+    for (let index = 0; index < 18; index += 1) {
+      const x = (index * 67) % canvas.width;
+      const y = (index * 41) % canvas.height;
+      context.beginPath();
+      context.ellipse(x, y, 8 + (index % 5) * 4, 4 + (index % 4) * 3, index, 0, Math.PI * 2);
+      context.fill();
+    }
+  } else if (profiles.pattern === 'craters') {
+    for (let index = 0; index < 30; index += 1) {
+      const x = (index * 83) % canvas.width;
+      const y = (index * 47) % canvas.height;
+      context.fillStyle = index % 2 ? profiles.detail : '#333936';
+      context.globalAlpha = 0.35;
+      context.beginPath();
+      context.arc(x, y, 2 + (index % 5), 0, Math.PI * 2);
+      context.fill();
+    }
+  } else {
+    for (let index = 0; index < 32; index += 1) {
+      context.fillStyle = index % 2 ? profiles.detail : '#f3d89c';
+      context.globalAlpha = 0.12;
+      context.beginPath();
+      context.arc((index * 53) % canvas.width, (index * 29) % canvas.height, 7 + (index % 8), 0, Math.PI * 2);
+      context.fill();
+    }
+  }
+
+  context.globalAlpha = 1;
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  planetTextureCache.set(planetIndex, texture);
+  return texture;
+}
+
+function getOrbitPhase(event, index) {
+  const seed = Math.abs((event.dateId || 0) * 9301 + index * 49297 + 233280);
+  return (seed % 233280) / 233280 * Math.PI * 2;
+}
+
 //define canvas, scene and camera
 const canvas = document.querySelector('#bg');
 const scene = new THREE.Scene();
@@ -68,7 +157,8 @@ const orbits = [];
 
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
-camera.position.setZ(200);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+camera.position.setZ(255);
 camera.position.setY(25);
 
 //add space skybox
@@ -119,9 +209,14 @@ const controls = new OrbitControls(camera, renderer.domElement);
 //only allow zooming in and out, no panning
 controls.enablePan = false;
 controls.enableZoom = true;
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.rotateSpeed = 0.22;
+controls.minPolarAngle = 0.72;
+controls.maxPolarAngle = 2.42;
 controls.minDistance = 170;
 controls.maxDistance = 370;
-controls.zoomSpeed = 0.4;
+controls.zoomSpeed = 0.18;
 
 function addStars() {
   //define a star
@@ -143,15 +238,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
   const myEventsButton = document.getElementById("myevents");
   const profileButton = document.getElementById("profile");
+  const profileEmail = document.getElementById("profile-email");
   const dropdown = document.querySelector(".dropdown");
   const logoutButton = document.getElementById("logout");
-  const focusModeButton = document.getElementById("focus-mode");
+  const focusModeToggle = document.getElementById("focus-mode-toggle");
   const toggleOrbitsCheckbox = document.getElementById("toggleorbits")
 
   const myEventsPopupWindow = document.getElementById("myeventspopup");
   const myEventsPopupCloseButton = document.getElementById("myevents-popup-done-btn");
   const myEventsPopupNewButton = document.getElementById("myevents-popup-new-btn");
   const weekFilterButton = document.getElementById("myevents-week-filter");
+  focusModeToggle.checked = false;
 
   if (token) {
     try {
@@ -167,7 +264,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         // only show this as part of dropdown
         myEventsButton.style.display = "flex";
         toggleOrbitsCheckbox.style.display = "flex";
-        focusModeButton.style.display = "flex";
         logoutButton.style.display = "flex";
 
         myEventsButton.addEventListener("click", async (e) => {
@@ -195,13 +291,14 @@ document.addEventListener("DOMContentLoaded", async () => {
           await refreshEvents();
         });
 
-        focusModeButton.addEventListener("click", async (event) => {
-          event.preventDefault();
+        const toggleFocusMode = async () => {
           focusMode = !focusMode;
+          focusModeToggle.checked = focusMode;
           document.body.classList.toggle("focus-mode", focusMode);
-          focusModeButton.textContent = focusMode ? "Exit focus mode" : "Focus mode";
           await refreshEvents();
-        });
+        };
+
+        focusModeToggle.addEventListener("change", toggleFocusMode);
 
         logoutButton.addEventListener("click", (e) => {
           localStorage.clear();
@@ -210,7 +307,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Show profile button with the user's email
         profileButton.style.display = "flex";
-        profileButton.textContent = userEmail;
+        profileEmail.textContent = userEmail;
 
         // Toggle dropdown visibility on click
         profileButton.addEventListener("click", (e) => {
@@ -414,28 +511,30 @@ async function PopulateDates(events = null) {
       events = getVisibleEvents();
     }
 
-    //TODO allow users to add custom images as map texture to planets
-    const planetTexture = new THREE.TextureLoader().load('planet-texture.jpg');
-    const planetNormalTexture = new THREE.TextureLoader().load('sun-normal-map.jpg');
-
     events.forEach((event, index) => {
       const importance = Math.min(10, Math.max(1, event.importance || 5));
       const planetRadius = 2 + importance * 0.5;
       const planetGeometry = new THREE.SphereGeometry(planetRadius, 16, 16);
-      const planetColor = new THREE.Color().setHSL((event.dateId * 0.137) % 1, 0.72, 0.56);
+      const orbitalRadius = calculateOrbitalRadius(event);
+      const planetBand = getPlanetBandForOrbit(orbitalRadius);
       const planetMaterial = new THREE.MeshStandardMaterial({
-        map: planetTexture,
-        normalMap: planetNormalTexture,
-        color: planetColor,
-        emissive: planetColor,
-        emissiveIntensity: 0.12
+        map: getPlanetTexture(planetBand.index),
+        color: 0xffffff,
+        roughness: planetBand.index > 3 ? 0.72 : 0.62,
+        metalness: 0,
+        emissive: planetBand.color,
+        emissiveIntensity: 0.24
       });
       const planet = new THREE.Mesh(planetGeometry, planetMaterial);
 
       //create a group to act as orbit center
       const orbitGroup = new THREE.Group();
-      const orbitalRadius = calculateOrbitalRadius(event);
-      planet.position.set(orbitalRadius, 0, 0);
+      const orbitPhase = getOrbitPhase(event, index);
+      planet.position.set(
+        orbitalRadius * Math.cos(orbitPhase),
+        0,
+        orbitalRadius * Math.sin(orbitPhase)
+      );
 
       //create orbit lines, use EllipseCurve instead of CircleGeometry to prevent visible lines spanning from center to circumference
       const curve = new THREE.EllipseCurve(
@@ -572,7 +671,6 @@ async function refreshEvents() {
 }
 
 eventForm.addEventListener('submit', saveEvent);
-document.getElementById('event-form-close').addEventListener('click', closeEventForm);
 document.getElementById('event-form-cancel').addEventListener('click', closeEventForm);
 eventImportanceInput.addEventListener('input', () => {
   eventImportanceValue.value = eventImportanceInput.value;
@@ -607,11 +705,12 @@ function calculateOrbitalRadius(event) {
 const popup = document.getElementById("popup");
 const popupTitle = document.getElementById("popup-title");
 const popupDetails = document.getElementById("popup-details");
-const popupClose = document.getElementById("popup-close");
 
-//close popup function
-popupClose.addEventListener("click", () => {
-  popup.style.display = "none";
+// Close the event details when the backdrop is clicked.
+popup.addEventListener("click", (event) => {
+  if (event.target === popup) {
+    popup.style.display = "none";
+  }
 });
 
 //event listener for clicks on planet spheres

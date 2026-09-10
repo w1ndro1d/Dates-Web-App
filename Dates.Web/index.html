@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="stylesheet" href="/src/style.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dates</title>
 </head>
@@ -11,17 +12,27 @@
 <body>
   <div id="app"></div>
   <div id="overlay">
-    <!-- to replace text with github icon -->
-    <a href="https://github.com/w1ndro1d/Dates-Web-App" id="github">GitHub</a>
-    <a href="#" id="login">Login/Signup</a>
+    <div class="brand-lockup" aria-label="Dates home">
+      <a href="https://github.com/w1ndro1d/Dates-Web-App" id="github" class="brand-mark" target="_blank" rel="noopener noreferrer" aria-label="Open Dates on GitHub">
+        <img src="https://github.githubassets.com/favicons/favicon.svg" alt="GitHub">
+      </a>
+      <span class="brand-copy"><strong>DATES</strong><small>NEVER MISS ANOTHER EVENT</small></span>
+    </div>
+
+    <nav class="top-actions" aria-label="Primary navigation">
+      <a href="#" id="login">Login / Signup</a>
+    </nav>
 
     <!-- profile dropdown-->
     <div class="dropdown">
-      <a href="#" id="profile" style="display: none;">Profile</a>
+      <a href="#" id="profile" style="display: none;" aria-label="Open profile menu" title="Open profile menu">
+        <span class="profile-icon" aria-hidden="true"></span>
+      </a>
       <div class="dropdown-content">
+        <div id="profile-email" class="profile-email"></div>
         <input type="checkbox" id="toggleorbits" checked ><label id="toggle-orbits-label">Show Orbits</label>
+        <input type="checkbox" id="focus-mode-toggle"><label id="focus-mode-label" for="focus-mode-toggle">Focus mode</label>
         <a href="#" id="myevents" style="display: none;">My Events</a>
-        <a href="#" id="focus-mode" style="display: none;">Focus mode</a>
         <a href="#" id="logout" style="display: none;">Logout</a>
       </div>
     </div>
@@ -30,10 +41,10 @@
   <!-- Modal Container -->
   <div id="loginModal" class="modal">
     <div class="modal-content">
-      <span id="closeModal" class="close">&times;</span>
-      <!-- <h2>Login / Sign Up</h2> -->
+      <div class="auth-heading">
+        <h2>Welcome to Dates</h2>
+      </div>
 
-      <!-- Tab Links (optional) -->
       <div class="tab">
         <button class="tablinks" onclick="openTab(event, 'LoginForm')" id="defaultOpen">Sign In</button>
         <button class="tablinks" onclick="openTab(event, 'SignupForm')">Sign Up</button>
@@ -43,7 +54,10 @@
       <div id="LoginForm" class="tabcontent">
         <form id="loginForm">
           <input type="email" placeholder="Email" required><br>
-          <input type="password" placeholder="Password" required><br>
+          <div class="password-field">
+            <input id="login-password" type="password" placeholder="Password" required>
+            <button class="password-toggle" type="button" data-password-target="login-password" aria-label="Show password" title="Show password"></button>
+          </div>
           <button class="login-button" type="submit">Login</button>
         </form>
       </div>
@@ -52,8 +66,14 @@
       <div id="SignupForm" class="tabcontent">
         <form id="signupForm">
           <input type="email" placeholder="Email" required><br>
-          <input type="password" placeholder="Password" required><br>
-          <input type="password" placeholder="Confirm Password" required><br>
+          <div class="password-field">
+            <input id="signup-password" type="password" placeholder="Password" required>
+            <button class="password-toggle" type="button" data-password-target="signup-password" aria-label="Show password" title="Show password"></button>
+          </div>
+          <div class="password-field">
+            <input id="signup-confirm-password" type="password" placeholder="Confirm Password" required>
+            <button class="password-toggle" type="button" data-password-target="signup-confirm-password" aria-label="Show password" title="Show password"></button>
+          </div>
           <button class="signup-button" type="submit">Create Account</button>
         </form>
       </div>
@@ -62,7 +82,6 @@
 
   <div id="popup" class="popup">
     <div id="popup-content">
-      <span id="popup-close">&times;</span>
       <h3 id="popup-title"></h3>
       <p id="popup-details"></p>
     </div>
@@ -104,7 +123,6 @@
 
   <div id="eventFormModal" class="event-form-modal">
     <form id="eventForm" class="event-form">
-      <button type="button" id="event-form-close" class="event-form-close" aria-label="Close">&times;</button>
       <h3 id="event-form-title">Add Event</h3>
       <label for="event-name">Event</label>
       <input id="event-name" name="event" type="text" maxlength="200" required>

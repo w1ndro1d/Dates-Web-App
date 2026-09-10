@@ -1,19 +1,24 @@
 //login and signup
 const modal = document.getElementById("loginModal");
 const loginSignupButton = document.getElementById("login");
-const closeModal = document.getElementById("closeModal");
 const defaultTab = document.getElementById("defaultOpen");
 const signupForm = document.getElementById("signupForm");
 const profileButton = document.getElementById("profile");
 
+document.querySelectorAll(".password-toggle").forEach((toggle) => {
+  toggle.addEventListener("click", () => {
+    const passwordInput = document.getElementById(toggle.dataset.passwordTarget);
+    const showingPassword = passwordInput.type === "text";
+    passwordInput.type = showingPassword ? "password" : "text";
+    toggle.classList.toggle("is-visible", !showingPassword);
+    toggle.setAttribute("aria-label", showingPassword ? "Show password" : "Hide password");
+    toggle.title = showingPassword ? "Show password" : "Hide password";
+  });
+});
+
 //open modal when button is clicked
 loginSignupButton.addEventListener('click', () => {
   modal.style.display="flex";
-})
-
-//close modal when x is clicked
-closeModal.addEventListener('click', () => {
-  modal.style.display="none";
 })
 
 //close modal when user clicks outside modal
