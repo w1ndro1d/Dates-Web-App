@@ -5,7 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { createApp } from '../server/app.js';
 import { hash, token } from '../server/security.js';
 import { processReminders } from '../server/reminders.js';
-import { localDate, localHour, occurrenceDate, dueDate, daysBetween } from '../shared/calendar.js';
+import { localDate, occurrenceDate, dueDate, daysBetween } from '../shared/calendar.js';
 
 const db = new PGlite();
 const mail = [];
@@ -108,16 +108,15 @@ test('calendar arithmetic handles leap years, month ends, DST and international 
   assert.equal(daysBetween('2026-03-08', '2026-03-09'), 1);
   assert.equal(localDate(new Date('2026-09-19T12:00:00Z'), 'Pacific/Kiritimati'), '2026-09-20');
   assert.equal(localDate(new Date('2026-09-19T00:00:00Z'), 'America/Los_Angeles'), '2026-09-18');
-  assert.equal(localHour(new Date('2026-09-19T00:15:00Z'), 'Asia/Kathmandu'), 6);
 });
 
-test('scheduled checks only send during the event timezone morning hour', async () => {
+test('scheduled checks send as soon as the event date starts in its timezone', async () => {
   const user = (await db.query(`SELECT id FROM users WHERE email='one@example.com'`)).rows[0];
   const event = (await db.query(`INSERT INTO events(user_id,title,event_date,time_zone,importance,remind_today)
     VALUES($1,'Morning event','2026-09-19','Asia/Kathmandu',5,true) RETURNING id`, [user.id])).rows[0];
   const before = mail.length;
-  assert.equal((await processReminders(db, send, new Date('2026-09-18T23:59:00Z'), { targetLocalHour: 6 })).processed, 0);
-  assert.equal((await processReminders(db, send, new Date('2026-09-19T00:15:00Z'), { targetLocalHour: 6 })).processed, 1);
+  assert.equal((await processReminders(db, send, new Date('2026-09-18T18:14:59Z'))).processed, 0);
+  assert.equal((await processReminders(db, send, new Date('2026-09-18T18:15:00Z'))).processed, 1);
   assert.equal(mail.length, before + 1);
   await db.query('DELETE FROM events WHERE id=$1', [event.id]);
 });

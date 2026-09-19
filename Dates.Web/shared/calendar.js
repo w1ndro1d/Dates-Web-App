@@ -7,11 +7,6 @@ export function localDate(now, timeZone) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now).map(p => [p.type, p.value]));
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
-export function localHour(now, timeZone) {
-  const hour = new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', hourCycle: 'h23' })
-    .formatToParts(now).find(part => part.type === 'hour')?.value;
-  return Number(hour);
-}
 function inYear(value, year) {
   const [, month, day] = value.split('-').map(Number);
   const last = new Date(Date.UTC(year, month, 0)).getUTCDate();

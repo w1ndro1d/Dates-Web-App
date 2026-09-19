@@ -1,7 +1,7 @@
-import { localDate, localHour, occurrenceDate, dueDate } from '../shared/calendar.js';
+import { localDate, occurrenceDate, dueDate } from '../shared/calendar.js';
 import { reminderMail } from './mail.js';
 
-export async function processReminders(db, send, now = new Date(), { targetLocalHour = null } = {}) {
+export async function processReminders(db, send, now = new Date()) {
   // A bounded function invocation; durable deliveries prevent routine duplicate runs.
   const started = Date.now();
   let processed = 0;
@@ -16,7 +16,6 @@ export async function processReminders(db, send, now = new Date(), { targetLocal
     if (!rows.length) break;
     for (const event of rows) {
       cursor = event.id;
-      if (targetLocalHour !== null && localHour(now, event.time_zone) !== targetLocalHour) continue;
       const today = localDate(now, event.time_zone);
       const occurrence = occurrenceDate(event.event_date, event.recurring, today);
       for (const kind of ['month', 'week', 'day', 'today']) {

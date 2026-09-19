@@ -45,7 +45,7 @@ async function checkLocalReminders() {
   if (checkingReminders) return;
   checkingReminders = true;
   try {
-    const result = await processReminders(db, send, new Date(), { targetLocalHour: 6 });
+    const result = await processReminders(db, send, new Date());
     if (result.processed || result.failed) console.log(`Reminder check: ${result.processed - result.failed} sent, ${result.failed} failed`);
   } catch (error) {
     console.error('Local reminder check failed', { category: error.code || error.name });
