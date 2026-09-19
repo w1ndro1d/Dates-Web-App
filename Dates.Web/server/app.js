@@ -59,6 +59,18 @@ export function createApp({ db, send, env = process.env }) {
       throw new HttpError(503, 'Email delivery is temporarily unavailable. Use Resend verification to try again.');
     }
   }
+  async function sendNewlyDueReminders() {
+    if (env.REMINDERS_ENABLED !== 'true') return null;
+    try {
+      return await processReminders(db, send);
+    } catch (error) {
+      // The event has already been saved. Let the scheduled retry handle a
+      // temporary database or SMTP failure rather than making the user retry
+      // and accidentally create a duplicate event.
+      console.error('Immediate reminder check failed', { category: error.code || error.name });
+      return null;
+    }
+  }
   app.get('/api/health', async (req, res) => { await query('SELECT 1'); res.json({ status: 'ok' }); });
   app.post('/api/Authentication/register', async (req, res) => {
     await rateLimit(req, 'register', 5, 3600);
@@ -112,6 +124,7 @@ export function createApp({ db, send, env = process.env }) {
     const values = eventValues(req.body);
     const rows = await query(`INSERT INTO events(user_id,title,event_date,time_zone,recurring,importance,note,remind_month,remind_week,remind_day,remind_today)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *,event_date::text AS event_date`, [req.user.id, ...values]);
+    await sendNewlyDueReminders();
     res.status(201).json(eventDto(rows[0]));
   });
   app.put('/api/DateDetails/:id', authenticate, async (req, res) => {
@@ -120,6 +133,7 @@ export function createApp({ db, send, env = process.env }) {
       remind_month=$9,remind_week=$10,remind_day=$11,remind_today=$12 WHERE id=$1 AND user_id=$2 RETURNING *,event_date::text AS event_date`, [eventId(req), req.user.id, ...values]);
     if (!rows.length) throw new HttpError(404, 'Event not found.');
     // Delivery records are independent of edits, so cosmetic edits never resend mail.
+    await sendNewlyDueReminders();
     res.json(eventDto(rows[0]));
   });
   app.delete('/api/DateDetails/:id', authenticate, async (req, res) => {
@@ -130,7 +144,7 @@ export function createApp({ db, send, env = process.env }) {
   app.get('/api/cron/reminders', async (req, res) => {
     if ((env.CRON_SECRET || '').length < 32 || !equalSecret(req.headers.authorization, `Bearer ${env.CRON_SECRET}`)) throw new HttpError(401, 'Unauthorized.');
     if (env.REMINDERS_ENABLED !== 'true' || (env.VERCEL_ENV && env.VERCEL_ENV !== 'production')) return res.json({ disabled: true });
-    const result = await processReminders(db, send);
+    const result = await processReminders(db, send, new Date(), { targetLocalHour: 6 });
     await query('DELETE FROM sessions WHERE expires_at < now()');
     await query('DELETE FROM rate_limits WHERE expires_at < now()');
     res.status(result.failed ? 503 : 200).json(result);
