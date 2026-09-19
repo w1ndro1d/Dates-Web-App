@@ -79,6 +79,9 @@ test('reminders use local calendar date, escape content, persist across runs and
   assert.equal(results.reduce((sum, r) => sum + r.processed, 0), 1);
   assert.equal(mail.length, initialMail + 1);
   assert.ok(mail.at(-1).html.includes('&lt;script&gt;'));
+  assert.ok(mail.at(-1).html.includes('Medium</strong>'));
+  assert.ok(!mail.at(-1).html.includes('/10'));
+  assert.ok(!mail.at(-1).html.includes('Your events, right on time'));
   assert.equal((await db.query('SELECT state FROM deliveries')).rows[0].state, 'sent');
   const id = (await request('/api/DateDetails')).body[0].dateId;
   assert.equal((await request(`/api/DateDetails/${id}`, 'PUT', { ...event, event: 'Renamed' })).status, 200);

@@ -49,14 +49,13 @@ Never put `CRON_SECRET` in the URL. The endpoint is bounded, authenticated, prod
 
 ## Local development
 
-Copy `.env.example` to ignored `.env.local`, fill in development values, and use a separate development database and SMTP account.
+`npm run dev` starts both the API and Vite. Without `DATABASE_URL`, it creates a private Postgres-compatible database under the ignored `.local` directory. The API reuses SMTP settings from the ignored `.NET` `appsettings.Local.json`; `.env.local` values take precedence when present.
 
 ```powershell
 npm install
-npm run db:migrate
-npm run dev:api
+npm run dev
 ```
 
-In another terminal run `npm run dev`. Before release, run `npm test`, `npm run build`, and `npm audit --omit=dev`.
+Use `npm run dev:api` only when you want to run the API separately. Before release, run `npm test`, `npm run build`, and `npm audit --omit=dev`.
 
 The older `.NET` project remains available for local reference and migration history. It is not used by the Vercel deployment.

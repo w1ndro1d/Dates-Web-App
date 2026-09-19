@@ -127,12 +127,26 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 // camera.layers.enable(0);
 let renderer;
+function showStaticSpace() {
+  document.body.classList.add('webgl-unavailable');
+  canvas.style.backgroundImage = `linear-gradient(rgba(2, 5, 15, .2), rgba(2, 5, 15, .45)), url(${spaceTextureUrl})`;
+}
 try { renderer = new THREE.WebGLRenderer({ canvas }); }
 catch {
   // Event management remains usable on devices without WebGL.
   renderer = { domElement: canvas, setPixelRatio() {}, setSize() {}, render() {} };
+  showStaticSpace();
   showNotification('The 3D view is unavailable on this device. Your events are still available in the profile menu.', 'info', 'Simple view');
 }
+canvas.addEventListener('webglcontextlost', event => {
+  event.preventDefault();
+  showStaticSpace();
+  showNotification('The 3D view paused because the browser reset its graphics context. Reload the page to restore it.', 'info', '3D view paused');
+});
+canvas.addEventListener('webglcontextrestored', () => {
+  document.body.classList.remove('webgl-unavailable');
+  canvas.style.backgroundImage = '';
+});
 // console.log(canvas); // should log the canvas element to console
 
 const orbits = [];
@@ -795,7 +809,6 @@ function calculateOrbitalRadius(event) {
 const popup = document.getElementById("popup");
 const popupTitle = document.getElementById("popup-title");
 const popupDetails = document.getElementById("popup-details");
-document.getElementById('popup-done').addEventListener('click', () => { popup.style.display = 'none'; });
 
 // Close the event details when the backdrop is clicked.
 popup.addEventListener("click", (event) => {
@@ -854,8 +867,9 @@ renderer.domElement.addEventListener("click", (event) => {
 
 //animation loop
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+let animationFrame;
 function animate() {
-  requestAnimationFrame(animate);
+  animationFrame = requestAnimationFrame(animate);
   if (document.hidden) return;
   if (reducedMotion.matches) { controls.update(); renderer.render(scene, camera); return; }
 
@@ -904,3 +918,14 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate()
+
+// Vite replaces modules during development. Release the old WebGL context so
+// repeated CSS/JS saves do not eventually leave the browser with a blank canvas.
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    cancelAnimationFrame(animationFrame);
+    controls.dispose();
+    if (typeof renderer.dispose === 'function') renderer.dispose();
+    if (typeof renderer.forceContextLoss === 'function') renderer.forceContextLoss();
+  });
+}

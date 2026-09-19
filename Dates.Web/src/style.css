@@ -1390,6 +1390,11 @@ form input:focus,
   transition: opacity 700ms ease, transform 700ms ease, visibility 0s linear;
 }
 
+body.webgl-unavailable #bg {
+  background-position: center;
+  background-size: cover;
+}
+
 body.ui-idle #overlay {
   opacity: 0;
   transform: translateY(-10px);
@@ -2373,7 +2378,7 @@ button:disabled { opacity: 0.6; cursor: wait; transform: none !important; }
 #auth-status { font-size: 14px; line-height: 1.5; color: #ffd184; overflow-wrap: anywhere; }
 #auth-status:empty { display: none; }
 #auth-status.is-error { color: #ffad92; }
-#verify-email, #popup-done, .table-state button {
+#verify-email, .table-state button {
   color: #fff4df; background: #713d20; border: 1px solid #ae7840;
   border-radius: 10px; padding: 12px 18px; cursor: pointer; font: inherit;
 }

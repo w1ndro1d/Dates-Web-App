@@ -5,6 +5,7 @@ export const loginSignupButton = document.getElementById('login');
 const loginForm = document.getElementById('loginForm');
 const signupForm = document.getElementById('signupForm');
 const authStatus = document.getElementById('auth-status');
+const resendButton = document.getElementById('resend-verification');
 const notification = document.getElementById('notification');
 const closeNotification = document.getElementById('notification-close');
 let notificationTimer;
@@ -77,13 +78,19 @@ signupForm.addEventListener('submit', event => {
 loginForm.addEventListener('submit', event => {
   event.preventDefault();
   pending(loginForm.querySelector('[type=submit]'), async () => {
-    await api('/Authentication/login', { method: 'POST', body: {
-      email: loginForm.querySelector('[type=email]').value.trim(), password: document.getElementById('login-password').value
-    } });
-    location.reload();
+    try {
+      await api('/Authentication/login', { method: 'POST', body: {
+        email: loginForm.querySelector('[type=email]').value.trim(), password: document.getElementById('login-password').value
+      } });
+      resendButton.hidden = true;
+      location.reload();
+    } catch (error) {
+      resendButton.hidden = error.code !== 'email_not_verified';
+      throw error;
+    }
   });
 });
-document.getElementById('resend-verification').addEventListener('click', event => {
+resendButton.addEventListener('click', event => {
   const emailInput = loginForm.querySelector('[type=email]');
   if (!emailInput.reportValidity()) return;
   pending(event.currentTarget, async () => {
@@ -93,15 +100,25 @@ document.getElementById('resend-verification').addEventListener('click', event =
 });
 let verificationToken = new URLSearchParams(location.hash.slice(1)).get('verify-email');
 const verifyButton = document.getElementById('verify-email');
+async function completeEmailVerification() {
+  if (!verificationToken || verifyButton.disabled) return;
+  verifyButton.disabled = true;
+  verifyButton.hidden = true;
+  status('Verifying your email…');
+  try {
+    const result = await api('/Authentication/verify-email', { method: 'POST', body: { token: verificationToken } });
+    verificationToken = null;
+    resendButton.hidden = true;
+    status(result.message);
+  } catch (error) {
+    status(error.message, true);
+    verifyButton.textContent = 'Try verification again';
+    verifyButton.hidden = false;
+  } finally { verifyButton.disabled = false; }
+}
 if (verificationToken) {
   history.replaceState({}, '', location.pathname + location.search);
   modal.style.display = 'flex';
-  verifyButton.hidden = false;
-  status('Finish verifying your email, then sign in.');
+  queueMicrotask(completeEmailVerification);
 }
-verifyButton.addEventListener('click', event => pending(event.currentTarget, async () => {
-  const result = await api('/Authentication/verify-email', { method: 'POST', body: { token: verificationToken } });
-  verificationToken = null;
-  verifyButton.hidden = true;
-  status(result.message);
-}));
+verifyButton.addEventListener('click', completeEmailVerification);
