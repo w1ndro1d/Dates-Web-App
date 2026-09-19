@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/dates.svg" />
+  <meta name="description" content="Keep your important dates in orbit. Track events and receive reminders in your timezone." />
+  <link rel="stylesheet" href="/src/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dates</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <div id="overlay">
+    <div class="brand-lockup" aria-label="Dates home">
+      <a href="https://github.com/w1ndro1d/Dates-Web-App" id="github" class="brand-mark" target="_blank" rel="noopener noreferrer" aria-label="Open Dates on GitHub">
+        <img src="https://github.githubassets.com/favicons/favicon.svg" alt="GitHub">
+      </a>
+      <span class="brand-copy"><strong>DATES</strong><small>NEVER MISS ANOTHER EVENT</small></span>
+    </div>
+
+    <nav class="top-actions" aria-label="Primary navigation">
+      <a href="#" id="login">Login / Signup</a>
+    </nav>
+
+    <!-- profile dropdown-->
+    <div class="dropdown">
+      <a href="#" id="profile" style="display: none;" aria-label="Open profile menu" title="Open profile menu">
+        <span class="profile-icon" aria-hidden="true"></span>
+      </a>
+      <div class="dropdown-content">
+        <div id="profile-email" class="profile-email"></div>
+        <input type="checkbox" id="toggleorbits" checked ><label id="toggle-orbits-label" for="toggleorbits">Show Orbits</label>
+        <input type="checkbox" id="focus-mode-toggle"><label id="focus-mode-label" for="focus-mode-toggle">Focus mode</label>
+        <a href="#" id="myevents" style="display: none;">My Events</a>
+        <a href="#" id="logout" style="display: none;">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <aside id="notification" class="notification" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+    <div class="notification-icon" aria-hidden="true"></div>
+    <div class="notification-copy">
+      <strong id="notification-title"></strong>
+      <p id="notification-message"></p>
+    </div>
+    <button id="notification-close" class="notification-close" type="button" aria-label="Dismiss notification">&times;</button>
+    <div class="notification-progress" aria-hidden="true"></div>
+  </aside>
+
+  <!-- Modal Container -->
+  <div id="loginModal" class="modal" aria-labelledby="auth-title">
+    <div class="modal-content">
+      <div class="auth-heading">
+        <h2 id="auth-title">Welcome to Dates</h2>
+      </div>
+
+      <div class="tab">
+        <button class="tablinks" data-tab="LoginForm" id="defaultOpen" type="button">Sign In</button>
+        <button class="tablinks" data-tab="SignupForm" type="button">Sign Up</button>
+      </div>
+      <p id="auth-status" role="status" aria-live="polite"></p>
+      <button id="verify-email" type="button" hidden>Verify email address</button>
+
+      <!-- Login Form -->
+      <div id="LoginForm" class="tabcontent">
+        <form id="loginForm">
+          <input type="email" placeholder="Email" aria-label="Email" autocomplete="username" required><br>
+          <div class="password-field">
+            <input id="login-password" type="password" placeholder="Password" aria-label="Password" autocomplete="current-password" required>
+            <button class="password-toggle" type="button" data-password-target="login-password" aria-label="Show password" title="Show password"></button>
+          </div>
+          <button class="login-button" type="submit">Login</button>
+          <button id="resend-verification" class="resend-verification" type="button" hidden>Resend verification email</button>
+        </form>
+      </div>
+
+      <!-- Sign Up Form -->
+      <div id="SignupForm" class="tabcontent">
+        <form id="signupForm">
+          <input id="signup-email" type="email" placeholder="Email" aria-label="Email" autocomplete="email" maxlength="254" required><br>
+          <div class="password-field">
+            <input id="signup-password" type="password" placeholder="Password (at least 8 characters)" aria-label="Password (at least 8 characters)" autocomplete="new-password" minlength="8" required>
+            <button class="password-toggle" type="button" data-password-target="signup-password" aria-label="Show password" title="Show password"></button>
+          </div>
+          <div class="password-field">
+            <input id="signup-confirm-password" type="password" placeholder="Confirm Password" aria-label="Confirm Password" autocomplete="new-password" minlength="8" required>
+            <button class="password-toggle" type="button" data-password-target="signup-confirm-password" aria-label="Show password" title="Show password"></button>
+          </div>
+          <button class="signup-button" type="submit">Create Account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="popup" class="popup" aria-labelledby="popup-title">
+    <div id="popup-content">
+      <h3 id="popup-title"></h3>
+      <p id="popup-details"></p>
+    </div>
+  </div>
+
+  <div id="myeventspopup" class="myeventspopup" aria-label="Your events">
+    <div id="myevents-popup-content">
+      <!-- <span id="myevents-popup-close">&times;</span> -->
+      <div id="myevents-popup-header">
+        <div id="event-summary"></div>
+        <button id="myevents-week-filter" type="button">This week</button>
+        <button id="myevents-popup-new-btn">+ Add New</button>
+        <button id="myevents-popup-done-btn">Done</button>
+      </div>
+      <div id="myevents-table-container">
+        <table id="myevents-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Added</th>
+              <th>Event</th>
+              <th>Description</th>
+              <th>Days Left</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows will be dynamically generated -->
+          </tbody>
+        </table>
+      </div>
+      <!-- <div id="myevents-popup-buttons">
+        <button id="myevents-popup-edit-btn">Edit</button>
+        <button id="myevents-popup-delete-btn">Delete</button>
+      </div> -->
+    </div>
+  </div>
+
+  <div id="eventFormModal" class="event-form-modal" aria-labelledby="event-form-title">
+    <form id="eventForm" class="event-form">
+      <h3 id="event-form-title">Add Event</h3>
+      <label for="event-name">Event</label>
+      <input id="event-name" name="event" type="text" maxlength="200" required>
+      <label for="event-date">Date</label>
+      <input id="event-date" name="eventDate" type="date" required>
+      <label class="event-form-checkbox">
+        <input id="event-recurring" name="isRecurring" type="checkbox">
+        Repeats every year
+      </label>
+      <label for="event-importance">Importance <output id="event-importance-value">5</output>/10</label>
+      <input id="event-importance" name="importance" type="range" min="1" max="10" step="1" value="5">
+      <label for="event-note">Description</label>
+      <textarea id="event-note" name="eventNote" maxlength="200"></textarea>
+      <fieldset class="reminder-options">
+        <legend>Email reminders</legend>
+        <p>Choose when Dates should remind you.</p>
+        <label><input id="reminder-all" type="checkbox"> All reminders</label>
+        <label><input id="reminder-month" type="checkbox"> 1 month before</label>
+        <label><input id="reminder-week" type="checkbox"> 1 week before</label>
+        <label><input id="reminder-day" type="checkbox"> 1 day before</label>
+        <label><input id="reminder-same-day" type="checkbox"> On the day</label>
+      </fieldset>
+      <div class="event-form-actions">
+        <button type="button" id="event-form-cancel">Cancel</button>
+        <button type="submit" id="event-form-submit">Save</button>
+      </div>
+    </form>
+  </div>
+
+  <dialog id="confirmation-dialog" class="site-dialog" aria-labelledby="confirmation-dialog-title" aria-describedby="confirmation-dialog-message">
+    <form method="dialog">
+      <div class="site-dialog-icon" aria-hidden="true">!</div>
+      <div class="site-dialog-copy">
+        <h2 id="confirmation-dialog-title">Delete event?</h2>
+        <p id="confirmation-dialog-message"></p>
+      </div>
+      <div class="site-dialog-actions">
+        <button class="site-dialog-cancel" type="submit" value="cancel" autofocus>Keep event</button>
+        <button id="confirmation-dialog-confirm" class="site-dialog-confirm" type="submit" value="confirm">Delete event</button>
+      </div>
+    </form>
+  </dialog>
+
+  <canvas id="bg"></canvas>
+
+  <script type="module" src="/src/main-3d.js"></script>
+</body>
+
+</html>
