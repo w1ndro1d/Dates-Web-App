@@ -45,7 +45,7 @@ On Vercel Hobby, native cron is limited to a daily schedule and can run with sub
 - Schedule: every 15 minutes
 - Header: `Authorization: Bearer YOUR_CRON_SECRET`
 
-The frequent check does not send mail all day. It sends scheduled reminders only during the event's local 6 AM hour. Creating or editing an event whose reminder is already due still triggers an immediate check.
+Each reminder becomes eligible as soon as its scheduled date begins in the event's saved timezone. Run the scheduled endpoint every minute for prompt delivery. Creating or editing an event never sends mail directly, and durable delivery records prevent repeated emails.
 
 Never put `CRON_SECRET` in the URL. The endpoint is bounded, authenticated, production-only on Vercel, and reminder sends are durably claimed in PostgreSQL. A crash after SMTP accepted a message but before its database update can still produce a retry; no SMTP system can make that boundary perfectly atomic.
 
