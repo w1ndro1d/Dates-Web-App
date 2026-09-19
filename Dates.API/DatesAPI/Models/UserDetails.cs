@@ -18,6 +18,21 @@ namespace DatesAPI.Models
 
         [Column(TypeName = "datetime")]
         public DateTime? CreatedAt { get; set; }
+
+        public bool IsEmailVerified { get; set; }
+
+        [MaxLength(128)]
+        [Column(TypeName = "nvarchar(128)")]
+        public string? EmailVerificationTokenHash { get; set; }
+
+        [Column(TypeName = "datetime2")]
+        public DateTime? EmailVerificationTokenExpiresAt { get; set; }
+
+        [Column(TypeName = "datetime2")]
+        public DateTime? EmailVerificationLastSentAt { get; set; }
+
+        [Column(TypeName = "datetime2")]
+        public DateTime? EmailVerifiedAt { get; set; }
         
     }
 }

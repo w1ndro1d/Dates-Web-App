@@ -10,6 +10,10 @@ namespace DatesAPI.Models
 
         public DateTime EventDate { get; set; }
 
+        [Required]
+        [MaxLength(100)]
+        public string TimeZoneId { get; set; } = "UTC";
+
         public bool IsRecurring { get; set; }
 
         [Range(1, 10)]
@@ -17,5 +21,13 @@ namespace DatesAPI.Models
 
         [MaxLength(200)]
         public string EventNote { get; set; } = "";
+
+        public bool ReminderOneMonth { get; set; }
+
+        public bool ReminderOneWeek { get; set; }
+
+        public bool ReminderOneDay { get; set; }
+
+        public bool ReminderSameDay { get; set; }
     }
 }

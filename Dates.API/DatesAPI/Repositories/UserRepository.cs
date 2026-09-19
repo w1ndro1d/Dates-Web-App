@@ -24,5 +24,17 @@ namespace DatesAPI.Repositories
             await _context.UserDetails.AddAsync(user);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<UserDetails?> GetUserByVerificationTokenHashAsync(string tokenHash)
+        {
+            return await _context.UserDetails
+                .FirstOrDefaultAsync(user => user.EmailVerificationTokenHash == tokenHash);
+        }
+
+        public async Task UpdateUserAsync(UserDetails user)
+        {
+            _context.UserDetails.Update(user);
+            await _context.SaveChangesAsync();
+        }
     }
 }

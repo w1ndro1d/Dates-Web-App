@@ -4,6 +4,7 @@ using DatesAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DatesAPI.Migrations
 {
     [DbContext(typeof(DateDetailsContext))]
-    partial class DateDetailsContextModelSnapshot : ModelSnapshot
+    [Migration("20260918165949_AddEmailReminders")]
+    partial class AddEmailReminders
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -36,7 +39,7 @@ namespace DatesAPI.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("EventDate")
-                        .HasColumnType("date");
+                        .HasColumnType("datetime");
 
                     b.Property<string>("EventNote")
                         .IsRequired()
@@ -75,11 +78,6 @@ namespace DatesAPI.Migrations
 
                     b.Property<DateTime?>("SameDayReminderSentFor")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("TimeZoneId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");

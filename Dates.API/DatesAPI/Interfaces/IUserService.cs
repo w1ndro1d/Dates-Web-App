@@ -6,5 +6,7 @@ namespace DatesAPI.Interfaces
     {
         Task<string> LoginAsync(string email, string password);
         Task RegisterAsync(UserDetails userRegistration);
+        Task<bool> VerifyEmailAsync(string token);
+        Task ResendVerificationEmailAsync(string email);
     }
 }

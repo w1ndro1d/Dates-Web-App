@@ -38,6 +38,11 @@ namespace DatesAPI.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<DateDetails>> PutDateDetails(int id, DateDetailsRequest request)
         {
+            if (!IsValidTimeZone(request.TimeZoneId))
+            {
+                return BadRequest("The supplied time zone is not supported.");
+            }
+
             var user = await GetCurrentUserAsync();
             if (user == null)
             {
@@ -52,10 +57,19 @@ namespace DatesAPI.Controllers
             }
 
             dateDetails.Event = request.Event.Trim();
-            dateDetails.EventDate = request.EventDate;
+            dateDetails.EventDate = request.EventDate.Date;
+            dateDetails.TimeZoneId = request.TimeZoneId;
             dateDetails.IsRecurring = request.IsRecurring;
             dateDetails.Importance = request.Importance;
             dateDetails.EventNote = request.EventNote.Trim();
+            dateDetails.ReminderOneMonth = request.ReminderOneMonth;
+            dateDetails.ReminderOneWeek = request.ReminderOneWeek;
+            dateDetails.ReminderOneDay = request.ReminderOneDay;
+            dateDetails.ReminderSameDay = request.ReminderSameDay;
+            dateDetails.OneMonthReminderSentFor = null;
+            dateDetails.OneWeekReminderSentFor = null;
+            dateDetails.OneDayReminderSentFor = null;
+            dateDetails.SameDayReminderSentFor = null;
 
             await _context.SaveChangesAsync();
             return Ok(dateDetails);
@@ -64,6 +78,11 @@ namespace DatesAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<DateDetails>> PostDateDetails(DateDetailsRequest request)
         {
+            if (!IsValidTimeZone(request.TimeZoneId))
+            {
+                return BadRequest("The supplied time zone is not supported.");
+            }
+
             var user = await GetCurrentUserAsync();
             if (user == null)
             {
@@ -74,10 +93,15 @@ namespace DatesAPI.Controllers
             {
                 UserId = user.UserID,
                 Event = request.Event.Trim(),
-                EventDate = request.EventDate,
+                EventDate = request.EventDate.Date,
+                TimeZoneId = request.TimeZoneId,
                 IsRecurring = request.IsRecurring,
                 Importance = request.Importance,
                 EventNote = request.EventNote.Trim(),
+                ReminderOneMonth = request.ReminderOneMonth,
+                ReminderOneWeek = request.ReminderOneWeek,
+                ReminderOneDay = request.ReminderOneDay,
+                ReminderSameDay = request.ReminderSameDay,
                 InitialLoggedDate = DateTime.UtcNow
             };
 
@@ -119,6 +143,28 @@ namespace DatesAPI.Controllers
 
             return await _userDetailsContext.UserDetails
                 .FirstOrDefaultAsync(user => user.Email == email);
+        }
+
+        private static bool IsValidTimeZone(string timeZoneId)
+        {
+            if (string.IsNullOrWhiteSpace(timeZoneId))
+            {
+                return false;
+            }
+
+            try
+            {
+                _ = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+                return true;
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return false;
+            }
+            catch (InvalidTimeZoneException)
+            {
+                return false;
+            }
         }
     }
 }

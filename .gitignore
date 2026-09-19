@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.vercel/
+**/.env*
+!**/.env.example
+**/appsettings.Local.json
+**/*.csproj.user
+**/test-results/
+**/playwright-report/
+*.log
+*.bak
+.DS_Store

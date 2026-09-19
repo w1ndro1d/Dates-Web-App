@@ -1,45 +1,23 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { radians, userData } from 'three/tsl';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import spaceTextureUrl from '../space-texture.jpg';
+import sunTextureUrl from '../sun-texture.jpg';
+import sunNormalTextureUrl from '../sun-normal-map.jpg';
 
-const API_BASE_URL = 'https://localhost:7275/api/DateDetails';
+import { api } from './api.js';
+import { modal, loginSignupButton, sessionReady, showNotification } from './login-signup-handler.js';
+import './dialogs.js';
+import { localDate, occurrenceDate, daysBetween } from '../shared/calendar.js';
+
 let allEvents = [];
 let showThisWeekOnly = false;
 let focusMode = false;
-
-function authenticatedHeaders(includeJson = false) {
-  const headers = {
-    Authorization: `Bearer ${localStorage.getItem('token')}`
-  };
-  if (includeJson) {
-    headers['Content-Type'] = 'application/json';
-  }
-  return headers;
-}
-
+function parseCalendarDate(value) { return new Date(value.substring(0, 10) + 'T12:00:00Z'); }
+function todayFor(event) { return localDate(new Date(), event.timeZoneId || 'UTC'); }
 function getNextEventDate(event) {
-  const sourceDate = new Date(event.eventDate);
-  if (!event.isRecurring) {
-    return sourceDate;
-  }
-
-  const today = new Date();
-  let nextDate = new Date(today.getFullYear(), sourceDate.getMonth(), sourceDate.getDate());
-  nextDate.setHours(0, 0, 0, 0);
-  if (nextDate < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
-    nextDate = new Date(today.getFullYear() + 1, sourceDate.getMonth(), sourceDate.getDate());
-  }
-  return nextDate;
+  return occurrenceDate(event.eventDate.substring(0, 10), event.isRecurring, todayFor(event));
 }
-
-function getDaysUntilEvent(event) {
-  const millisecondsPerDay = 24 * 60 * 60 * 1000;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const eventDate = getNextEventDate(event);
-  eventDate.setHours(0, 0, 0, 0);
-  return Math.ceil((eventDate - today) / millisecondsPerDay);
-}
+function getDaysUntilEvent(event) { return daysBetween(todayFor(event), getNextEventDate(event)); }
 
 function isHappeningThisWeek(event) {
   const daysUntil = getDaysUntilEvent(event);
@@ -148,21 +126,25 @@ const canvas = document.querySelector('#bg');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 // camera.layers.enable(0);
-const renderer = new THREE.WebGLRenderer({
-  canvas: canvas,
-});
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas }); }
+catch {
+  // Event management remains usable on devices without WebGL.
+  renderer = { domElement: canvas, setPixelRatio() {}, setSize() {}, render() {} };
+  showNotification('The 3D view is unavailable on this device. Your events are still available in the profile menu.', 'info', 'Simple view');
+}
 // console.log(canvas); // should log the canvas element to console
 
 const orbits = [];
 
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 camera.position.setZ(255);
 camera.position.setY(25);
 
 //add space skybox
-const spaceTexture = new THREE.TextureLoader().load('space-texture.jpg');
+const spaceTexture = new THREE.TextureLoader().load(spaceTextureUrl);
 // const spaceTexture = new THREE.CubeTextureLoader().load([
 //   'space-texture.jpg', 'space-texture.jpg', 'space-texture.jpg', 
 //   'space-texture.jpg', 'space-texture.jpg', 'space-texture.jpg'
@@ -185,14 +167,67 @@ skybox.raycast = () => { };  //disable raycasting for skybox
 // skybox.layers.set(1); //assign layer 1 to skybox, rest of the objects will be in layer 0(don't want raycaster to get blocked by skybox)
 
 
+function createSunGlowTexture() {
+  const glowCanvas = document.createElement('canvas');
+  glowCanvas.width = 256;
+  glowCanvas.height = 256;
+  const glowContext = glowCanvas.getContext('2d');
+  const glowGradient = glowContext.createRadialGradient(128, 128, 0, 128, 128, 128);
+  glowGradient.addColorStop(0, 'rgba(255, 255, 226, 1)');
+  glowGradient.addColorStop(0.16, 'rgba(255, 226, 126, 0.82)');
+  glowGradient.addColorStop(0.38, 'rgba(255, 185, 52, 0.4)');
+  glowGradient.addColorStop(0.68, 'rgba(255, 128, 12, 0.12)');
+  glowGradient.addColorStop(1, 'rgba(255, 82, 0, 0)');
+  glowContext.fillStyle = glowGradient;
+  glowContext.fillRect(0, 0, 256, 256);
+
+  const glowTexture = new THREE.CanvasTexture(glowCanvas);
+  glowTexture.colorSpace = THREE.SRGBColorSpace;
+  return glowTexture;
+}
+
 //define the shape, material and lights for central sphere(sun)
 const sunGeometry = new THREE.SphereGeometry(50, 32, 32);
-const sunTexture = new THREE.TextureLoader().load('sun-texture.jpg');
-const sunNormalTexture = new THREE.TextureLoader().load('sun-normal-map.jpg');
-const sunMaterial = new THREE.MeshStandardMaterial({ map: sunTexture, normalMap: sunNormalTexture, emissive: new THREE.Color(0xFC9601), emissiveIntensity: 0.05 });
+const sunTexture = new THREE.TextureLoader().load(sunTextureUrl);
+const sunNormalTexture = new THREE.TextureLoader().load(sunNormalTextureUrl);
+const sunMaterial = new THREE.MeshStandardMaterial({
+  map: sunTexture,
+  normalMap: sunNormalTexture,
+  emissive: new THREE.Color(0xffa326),
+  emissiveIntensity: 0.38,
+  roughness: 0.72,
+  metalness: 0
+});
 const sun = new THREE.Mesh(sunGeometry, sunMaterial);
 
-const pointLight = new THREE.PointLight(0xFFFFFF);
+const sunGlowTexture = createSunGlowTexture();
+const sunGlowMaterial = new THREE.SpriteMaterial({
+  map: sunGlowTexture,
+  color: 0xffb943,
+  transparent: true,
+  opacity: 0.3,
+  blending: THREE.AdditiveBlending,
+  depthTest: false,
+  depthWrite: false
+});
+const sunGlow = new THREE.Sprite(sunGlowMaterial);
+sunGlow.scale.set(185, 185, 1);
+sunGlow.renderOrder = -2;
+
+const sunCoronaMaterial = new THREE.SpriteMaterial({
+  map: sunGlowTexture,
+  color: 0xffd16b,
+  transparent: true,
+  opacity: 0.22,
+  blending: THREE.AdditiveBlending,
+  depthTest: false,
+  depthWrite: false
+});
+const sunCorona = new THREE.Sprite(sunCoronaMaterial);
+sunCorona.scale.set(115, 115, 1);
+sunCorona.renderOrder = -1;
+
+const pointLight = new THREE.PointLight(0xffdf9a, 1.4);
 pointLight.position.set(10, 10, 10);
 const ambientLight = new THREE.AmbientLight(0xFFFFFF);
 
@@ -200,7 +235,30 @@ const ambientLight = new THREE.AmbientLight(0xFFFFFF);
 const lightHelper = new THREE.PointLightHelper(pointLight)
 const gridHelper = new THREE.GridHelper(500, 100)
 // scene.add(lightHelper, gridHelper)
-scene.add(skybox, sun, pointLight, ambientLight);
+scene.add(skybox, sunGlow, sunCorona, sun, pointLight, ambientLight);
+
+const sunGlowClock = new THREE.Clock();
+const solarFlares = [0.25, 1.7, 3.15, 4.65].map((angle, index) => {
+  const flareMaterial = new THREE.SpriteMaterial({
+    map: sunGlowTexture,
+    color: 0xffd77a,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthTest: false,
+    depthWrite: false
+  });
+  const flareSprite = new THREE.Sprite(flareMaterial);
+  flareSprite.position.set(Math.cos(angle) * 47, Math.sin(angle) * 47, 0);
+  flareSprite.scale.set(28 + index * 3, 12 + index * 2, 1);
+  flareMaterial.rotation = angle + Math.PI / 2;
+  flareSprite.renderOrder = 1;
+  flareSprite.visible = false;
+  scene.add(flareSprite);
+  return { sprite: flareSprite, material: flareMaterial };
+});
+let activeSolarFlare = null;
+let nextSolarFlareAt = 3;
 
 // scene.add(sun, pointLight, ambientLight);
 
@@ -233,143 +291,86 @@ function addStars() {
 Array(1000).fill().forEach(addStars);
 
 
-//logic to show login/signup button if not logged in, show profile button if logged in
-document.addEventListener("DOMContentLoaded", async () => {
-  const token = localStorage.getItem("token");
-  const myEventsButton = document.getElementById("myevents");
-  const profileButton = document.getElementById("profile");
-  const profileEmail = document.getElementById("profile-email");
-  const dropdown = document.querySelector(".dropdown");
-  const logoutButton = document.getElementById("logout");
-  const focusModeToggle = document.getElementById("focus-mode-toggle");
-  const toggleOrbitsCheckbox = document.getElementById("toggleorbits")
-
-  const myEventsPopupWindow = document.getElementById("myeventspopup");
-  const myEventsPopupCloseButton = document.getElementById("myevents-popup-done-btn");
-  const myEventsPopupNewButton = document.getElementById("myevents-popup-new-btn");
-  const weekFilterButton = document.getElementById("myevents-week-filter");
-  focusModeToggle.checked = false;
-
-  if (token) {
-    try {
-      const decodedToken = decodeToken(token);
-      const userEmail = decodedToken.unique_name || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
-
-      if (userEmail) {
-        // Hide login/signup button
-        loginSignupButton.style.display = "none";
-        modal.style.display = "none";
-
-        // Show My Events button
-        // only show this as part of dropdown
-        myEventsButton.style.display = "flex";
-        toggleOrbitsCheckbox.style.display = "flex";
-        logoutButton.style.display = "flex";
-
-        myEventsButton.addEventListener("click", async (e) => {
-          myEventsPopupWindow.style.display = "flex";
-          popup.style.display = "none";
-
-          //populate popup
-          allEvents = await fetchResponse();
-          updateClosestEvent();
-          populateEventsTable(getVisibleEvents());
-          dropdown.classList.remove("show");
-          profileButton.classList.remove("profile-button-active");
-          // console.log(events);
-        })
-
-        myEventsPopupCloseButton.addEventListener("click", () => {
-          myEventsPopupWindow.style.display = "none";
-        });
-
-        myEventsPopupNewButton.addEventListener("click", () => openEventForm());
-
-        weekFilterButton.addEventListener("click", async () => {
-          showThisWeekOnly = !showThisWeekOnly;
-          weekFilterButton.textContent = showThisWeekOnly ? "Show all" : "This week";
-          await refreshEvents();
-        });
-
-        const toggleFocusMode = async () => {
-          focusMode = !focusMode;
-          focusModeToggle.checked = focusMode;
-          document.body.classList.toggle("focus-mode", focusMode);
-          await refreshEvents();
-        };
-
-        focusModeToggle.addEventListener("change", toggleFocusMode);
-
-        logoutButton.addEventListener("click", (e) => {
-          localStorage.clear();
-          location.reload();
-        })
-
-        // Show profile button with the user's email
-        profileButton.style.display = "flex";
-        profileEmail.textContent = userEmail;
-
-        // Toggle dropdown visibility on click
-        profileButton.addEventListener("click", (e) => {
-          e.preventDefault();
-
-          const isDropDownVisible = dropdown.style.display === "inline-block";
-          if (isDropDownVisible) {
-            profileButton.classList.remove("profile-button-active");
-          }
-          else {
-            profileButton.classList.add("profile-button-active");
-          }
-
-          dropdown.classList.toggle("show");
-        });
-
-        // Hide dropdown when clicking outside
-        window.addEventListener("click", (e) => {
-          if (!dropdown.contains(e.target) && !profileButton.contains(e.target)) {
-            dropdown.classList.remove("show");
-            profileButton.classList.remove("profile-button-active");
-          }
-        });
-
-        // Populate planets(dates)
-        await PopulateDates();
-
-        return; // Exit if the token is valid
-      }
-    } catch (error) {
-      console.error("Error decoding token: ", error);
-      // Clear invalid token from localStorage
-      localStorage.removeItem("token");
-    }
-  }
-
-  // If no valid token, ensure login/signup button is visible
-  // const loginSignupButton = document.getElementById("login");
-  loginSignupButton.style.display = "flex";
-
-  // Ensure profile button is hidden
-  // const profileButton = document.getElementById("profile");
-  profileButton.style.display = "none";
+// The server authenticates an HttpOnly cookie; no session secret is exposed to JavaScript.
+sessionReady.then(async user => {
+  const profileButton = document.getElementById('profile');
+  const dropdown = document.querySelector('.dropdown');
+  const eventsPanel = document.getElementById('myeventspopup');
+  loginSignupButton.style.display = user ? 'none' : 'flex';
+  profileButton.style.display = user ? 'flex' : 'none';
+  if (!user) return;
+  document.getElementById('profile-email').textContent = user.email;
+  const closeMenu = () => {
+    dropdown.classList.remove('show');
+    profileButton.classList.remove('profile-button-active');
+    profileButton.setAttribute('aria-expanded', 'false');
+  };
+  profileButton.setAttribute('aria-expanded', 'false');
+  profileButton.addEventListener('click', event => {
+    event.preventDefault();
+    const open = dropdown.classList.toggle('show');
+    profileButton.classList.toggle('profile-button-active', open);
+    profileButton.setAttribute('aria-expanded', String(open));
+  });
+  window.addEventListener('click', event => { if (!dropdown.contains(event.target)) closeMenu(); });
+  dropdown.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { closeMenu(); profileButton.focus(); }
+  });
+  const myEvents = document.getElementById('myevents');
+  myEvents.style.display = 'flex';
+  myEvents.addEventListener('click', async event => {
+    event.preventDefault(); eventsPanel.style.display = 'flex'; popup.style.display = 'none'; closeMenu();
+    await refreshEvents();
+  });
+  document.getElementById('myevents-popup-done-btn').addEventListener('click', () => { eventsPanel.style.display = 'none'; });
+  document.getElementById('myevents-popup-new-btn').addEventListener('click', () => openEventForm());
+  const week = document.getElementById('myevents-week-filter');
+  week.addEventListener('click', () => {
+    showThisWeekOnly = !showThisWeekOnly;
+    week.textContent = showThisWeekOnly ? 'Show all' : 'This week';
+    week.setAttribute('aria-pressed', String(showThisWeekOnly));
+    renderEvents();
+  });
+  document.getElementById('focus-mode-toggle').addEventListener('change', event => {
+    focusMode = event.target.checked;
+    document.body.classList.toggle('focus-mode', focusMode);
+    renderEvents();
+  });
+  const logout = document.getElementById('logout');
+  logout.style.display = 'flex';
+  let loggingOut = false;
+  logout.addEventListener('click', async event => {
+    event.preventDefault();
+    if (loggingOut) return;
+    loggingOut = true;
+    try { await api('/Authentication/logout', { method: 'POST' }); location.reload(); }
+    catch (error) { showNotification(error.message, 'error', 'Could not sign out'); loggingOut = false; }
+  });
+  await refreshEvents();
 });
-
-async function fetchResponse() {
-  try {
-    const response = await fetch(API_BASE_URL, {
-      headers: authenticatedHeaders()
-    });
-    if (!response.ok) {
-      throw new Error(`Unable to load events (${response.status})`);
-    }
-    return await response.json();
+function tableState(message, retry = false) {
+  const body = document.querySelector('#myevents-table tbody');
+  body.replaceChildren();
+  const cell = document.createElement('td');
+  cell.colSpan = 6;
+  cell.className = 'table-state';
+  cell.append(document.createTextNode(message));
+  if (retry) {
+    const button = document.createElement('button');
+    button.textContent = 'Try again';
+    button.addEventListener('click', refreshEvents);
+    cell.append(button);
   }
-  catch (error) {
-    console.error("Error loading events:", error);
-    return [];
-  }
+  const row = document.createElement('tr');
+  row.append(cell); body.append(row);
 }
+async function fetchResponse() { return api('/DateDetails'); }
 
 function populateEventsTable(events) {
+  if (!events.length) {
+    tableState(showThisWeekOnly || focusMode ? 'No events in the next seven days.' : 'No events yet. Add your first important date.');
+    return;
+  }
   const eventsTableBody = document.querySelector("#myevents-table tbody");
   eventsTableBody.innerHTML = "";
 
@@ -399,13 +400,13 @@ function populateEventsTable(events) {
 
     const editButton = document.createElement("button");
     //set properties
-    editButton.id = "myevents-popup-edit-btn";
+    editButton.className = "myevents-popup-edit-btn";
     editButton.textContent = "Edit";
     editButton.addEventListener("click", () => openEventForm(event));
 
     const deleteButton = document.createElement("button");
     //set properties
-    deleteButton.id = "myevents-popup-delete-btn";
+    deleteButton.className = "myevents-popup-delete-btn";
     deleteButton.textContent = "Delete";
     deleteButton.addEventListener("click", async () => deleteEvent(event, row));
 
@@ -426,7 +427,9 @@ function populateEventsTable(events) {
 }
 
 function formatEventDate(value) {
-  return new Date(value).toLocaleDateString(undefined, {
+  const date = typeof value === 'string' ? parseCalendarDate(value) : value;
+  return date.toLocaleDateString(undefined, {
+    timeZone: 'UTC',
     year: "numeric",
     month: "short",
     day: "numeric"
@@ -463,33 +466,52 @@ function updateClosestEvent() {
   summary.textContent = `Closest: ${closestEvent.event} ${countdown}`;
 }
 
-async function deleteEvent(event, row) {
-  // console.log(event.eventNote);
-  if (!confirm(`Are you sure you want to delete the event: ${event.event}?`)) {
-    return;
-  };
-  try {
-    const response = await fetch(`${API_BASE_URL}/${event.dateId}`, {
-      method: "DELETE",
-      headers: authenticatedHeaders(),
-    });
-    // console.log(response);
-    if (response.ok) {
-      allEvents = allEvents.filter(existingEvent => existingEvent.dateId !== event.dateId);
-      row.remove();
-      removeEventFromScene(event.dateId);
-      updateClosestEvent();
-      alert("Event deleted!");
-    }
-    else {
-      alert("Failed to delete event!");
-    }
-  }
-  catch (error) {
-    console.error("Error deleting event:", error);
-    alert("An error occurred while deleting the event.");
-  }
+const confirmationDialog = document.getElementById('confirmation-dialog');
+const confirmationDialogTitle = document.getElementById('confirmation-dialog-title');
+const confirmationDialogMessage = document.getElementById('confirmation-dialog-message');
+const confirmationDialogConfirm = document.getElementById('confirmation-dialog-confirm');
 
+function confirmAction({ title, message, confirmLabel = 'Confirm' }) {
+  confirmationDialogTitle.textContent = title;
+  confirmationDialogMessage.textContent = message;
+  confirmationDialogConfirm.textContent = confirmLabel;
+  confirmationDialog.returnValue = 'cancel';
+  confirmationDialog.showModal();
+
+  return new Promise((resolve) => {
+    confirmationDialog.addEventListener('close', () => {
+      resolve(confirmationDialog.returnValue === 'confirm');
+    }, { once: true });
+  });
+}
+
+confirmationDialog.addEventListener('click', (event) => {
+  const rect = confirmationDialog.getBoundingClientRect();
+  if (event.target === confirmationDialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) {
+    confirmationDialog.close('cancel');
+  }
+});
+
+async function deleteEvent(event, row) {
+  if (row.dataset.pending) return;
+  row.dataset.pending = 'true';
+  try {
+    const confirmed = await confirmAction({
+      title: 'Delete this event?',
+      message: `“${event.event}” will be permanently removed.`,
+      confirmLabel: 'Delete event'
+    });
+    if (!confirmed) return;
+    row.querySelectorAll('button').forEach(button => { button.disabled = true; });
+    await api(`/DateDetails/${event.dateId}`, { method: 'DELETE' });
+    allEvents = allEvents.filter(existing => existing.dateId !== event.dateId);
+    renderEvents();
+    document.getElementById('myevents-popup-new-btn').focus();
+  } catch (error) { showNotification(error.message, 'error', 'Could not delete event'); }
+  finally {
+    delete row.dataset.pending;
+    row.querySelectorAll('button').forEach(button => { button.disabled = false; });
+  }
 }
 
 function clearEventObjects() {
@@ -497,6 +519,7 @@ function clearEventObjects() {
     const [{ orbitGroup, planet, orbitLine }] = orbits.splice(0, 1);
     scene.remove(orbitGroup);
     planet.geometry.dispose();
+    planet.material.dispose();
     orbitLine.geometry.dispose();
     orbitLine.material.dispose();
   }
@@ -593,6 +616,7 @@ function removeEventFromScene(dateId) {
   const [{ orbitGroup, planet, orbitLine }] = orbits.splice(orbitIndex, 1);
   scene.remove(orbitGroup);
   planet.geometry.dispose();
+  planet.material.dispose();
   orbitLine.geometry.dispose();
   orbitLine.material.dispose();
 }
@@ -606,10 +630,29 @@ const eventRecurringInput = document.getElementById('event-recurring');
 const eventImportanceInput = document.getElementById('event-importance');
 const eventImportanceValue = document.getElementById('event-importance-value');
 const eventNoteInput = document.getElementById('event-note');
+const reminderAllInput = document.getElementById('reminder-all');
+const reminderMonthInput = document.getElementById('reminder-month');
+const reminderWeekInput = document.getElementById('reminder-week');
+const reminderDayInput = document.getElementById('reminder-day');
+const reminderSameDayInput = document.getElementById('reminder-same-day');
 let editingEventId = null;
+let editingTimeZone = 'UTC';
+
+function setAllReminderInputs(checked) {
+  reminderMonthInput.checked = checked;
+  reminderWeekInput.checked = checked;
+  reminderDayInput.checked = checked;
+  reminderSameDayInput.checked = checked;
+}
+
+function updateAllReminderInput() {
+  reminderAllInput.checked = reminderMonthInput.checked && reminderWeekInput.checked &&
+    reminderDayInput.checked && reminderSameDayInput.checked;
+}
 
 function openEventForm(event = null) {
   editingEventId = event?.dateId ?? null;
+  editingTimeZone = event?.timeZoneId || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   eventFormTitle.textContent = editingEventId ? 'Edit Event' : 'Add Event';
   eventNameInput.value = event?.event ?? '';
   eventDateInput.value = event ? event.eventDate.substring(0, 10) : '';
@@ -617,65 +660,112 @@ function openEventForm(event = null) {
   eventImportanceInput.value = event?.importance ?? 5;
   eventImportanceValue.value = eventImportanceInput.value;
   eventImportanceValue.textContent = eventImportanceInput.value;
+  reminderMonthInput.checked = event?.reminderOneMonth ?? false;
+  reminderWeekInput.checked = event?.reminderOneWeek ?? false;
+  reminderDayInput.checked = event?.reminderOneDay ?? false;
+  reminderSameDayInput.checked = event?.reminderSameDay ?? false;
+  updateAllReminderInput();
   eventNoteInput.value = event?.eventNote ?? '';
   eventFormModal.style.display = 'flex';
-  eventNameInput.focus();
 }
 
 function closeEventForm() {
+  if (savingEvent) return;
   eventFormModal.style.display = 'none';
   eventForm.reset();
   editingEventId = null;
 }
 
+let savingEvent = false;
 async function saveEvent(formEvent) {
   formEvent.preventDefault();
+  if (savingEvent) return;
+  savingEvent = true;
+  const submit = document.getElementById('event-form-submit');
+  const cancel = document.getElementById('event-form-cancel');
+  submit.disabled = cancel.disabled = true;
+  submit.textContent = 'Saving…';
   const request = {
-    event: eventNameInput.value.trim(),
-    eventDate: eventDateInput.value,
-    isRecurring: eventRecurringInput.checked,
-    importance: Number(eventImportanceInput.value),
-    eventNote: eventNoteInput.value.trim()
+    event: eventNameInput.value.trim(), eventDate: eventDateInput.value, timeZoneId: editingTimeZone,
+    isRecurring: eventRecurringInput.checked, importance: Number(eventImportanceInput.value),
+    eventNote: eventNoteInput.value.trim(), reminderOneMonth: reminderMonthInput.checked,
+    reminderOneWeek: reminderWeekInput.checked, reminderOneDay: reminderDayInput.checked,
+    reminderSameDay: reminderSameDayInput.checked
   };
   const eventId = editingEventId;
-  const url = eventId ? `${API_BASE_URL}/${eventId}` : API_BASE_URL;
-  const method = eventId ? 'PUT' : 'POST';
-
   try {
-    const response = await fetch(url, {
-      method,
-      headers: authenticatedHeaders(true),
-      body: JSON.stringify(request)
+    const saved = await api(eventId ? `/DateDetails/${eventId}` : '/DateDetails', {
+      method: eventId ? 'PUT' : 'POST', body: request
     });
-    if (!response.ok) {
-      const errorDetails = await response.text();
-      console.error('Save event failed:', response.status, errorDetails);
-      throw new Error(`Unable to save event (${response.status})`);
-    }
-
+    allEvents = [...allEvents.filter(event => event.dateId !== saved.dateId), saved];
+    savingEvent = false;
     closeEventForm();
-    await refreshEvents();
-    alert(eventId ? 'Event updated!' : 'Event added!');
-  } catch (error) {
-    console.error('Error saving event:', error);
-    alert(`${error.message}. Please try again.`);
+    renderEvents();
+    showNotification(eventId ? 'Your event was updated.' : 'Your event was added.', 'success', eventId ? 'Event updated' : 'Event added');
+  } catch (error) { showNotification(error.message, 'error', 'Could not save event'); }
+  finally {
+    savingEvent = false; submit.disabled = cancel.disabled = false; submit.textContent = 'Save';
   }
 }
-
-async function refreshEvents() {
-  allEvents = await fetchResponse();
+function renderEvents() {
   updateClosestEvent();
   populateEventsTable(getVisibleEvents());
   clearEventObjects();
-  await PopulateDates(getVisibleEvents());
+  PopulateDates(getVisibleEvents());
+}
+let refreshing = false;
+async function refreshEvents() {
+  if (refreshing) return;
+  refreshing = true;
+  const container = document.getElementById('myevents-table-container');
+  container.setAttribute('aria-busy', 'true');
+  tableState('Loading your events…');
+  try { allEvents = await fetchResponse(); renderEvents(); }
+  catch (error) {
+    tableState(error.message, true);
+    showNotification(error.message, 'error', 'Could not load events');
+    if (error.status === 401) modal.style.display = 'flex';
+  } finally { refreshing = false; container.setAttribute('aria-busy', 'false'); }
 }
 
 eventForm.addEventListener('submit', saveEvent);
 document.getElementById('event-form-cancel').addEventListener('click', closeEventForm);
+reminderAllInput.addEventListener('change', () => setAllReminderInputs(reminderAllInput.checked));
+[reminderMonthInput, reminderWeekInput, reminderDayInput, reminderSameDayInput].forEach((input) => {
+  input.addEventListener('change', updateAllReminderInput);
+});
 eventImportanceInput.addEventListener('input', () => {
   eventImportanceValue.value = eventImportanceInput.value;
   eventImportanceValue.textContent = eventImportanceInput.value;
 });
+
+const topOverlay = document.getElementById('overlay');
+const uiIdleDelay = 10000;
+let uiIdleTimer;
+
+function scheduleUiFade() {
+  clearTimeout(uiIdleTimer);
+  document.body.classList.remove('ui-idle');
+  uiIdleTimer = setTimeout(() => {
+    if (topOverlay.matches(':hover') || topOverlay.contains(document.activeElement)) {
+      scheduleUiFade();
+      return;
+    }
+    document.body.classList.add('ui-idle');
+  }, uiIdleDelay);
+}
+
+['pointermove', 'pointerdown', 'keydown', 'touchstart'].forEach((eventName) => {
+  window.addEventListener(eventName, scheduleUiFade, { passive: true });
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    scheduleUiFade();
+  }
+});
+
+scheduleUiFade();
 
 //dynamically resize canvas with window resize
 window.addEventListener('resize', () => {
@@ -705,6 +795,7 @@ function calculateOrbitalRadius(event) {
 const popup = document.getElementById("popup");
 const popupTitle = document.getElementById("popup-title");
 const popupDetails = document.getElementById("popup-details");
+document.getElementById('popup-done').addEventListener('click', () => { popup.style.display = 'none'; });
 
 // Close the event details when the backdrop is clicked.
 popup.addEventListener("click", (event) => {
@@ -762,12 +853,39 @@ renderer.domElement.addEventListener("click", (event) => {
 })
 
 //animation loop
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 function animate() {
   requestAnimationFrame(animate);
+  if (document.hidden) return;
+  if (reducedMotion.matches) { controls.update(); renderer.render(scene, camera); return; }
 
   //spin the sun around, anti-clockwise
   // sun.rotation.x += 0.00001;  //slight tilt along x-axis
   sun.rotation.y -= 0.00015;
+  const elapsedTime = sunGlowClock.getElapsedTime();
+  const glowPulse = 1 + Math.sin(elapsedTime * 1.4) * 0.012;
+  sunGlow.scale.set(185 * glowPulse, 185 * glowPulse, 1);
+  sunCorona.scale.set(115 * glowPulse, 115 * glowPulse, 1);
+  sunGlowMaterial.opacity = 0.28 + (glowPulse - 1) * 0.6;
+
+  if (activeSolarFlare) {
+    const flareProgress = (elapsedTime - activeSolarFlare.startedAt) / activeSolarFlare.duration;
+    if (flareProgress >= 1) {
+      activeSolarFlare.sprite.visible = false;
+      activeSolarFlare = null;
+      nextSolarFlareAt = elapsedTime + 3 + Math.random() * 5;
+    } else {
+      activeSolarFlare.material.opacity = Math.sin(flareProgress * Math.PI) * 0.42;
+    }
+  } else if (elapsedTime >= nextSolarFlareAt) {
+    const flare = solarFlares[Math.floor(Math.random() * solarFlares.length)];
+    flare.sprite.visible = true;
+    activeSolarFlare = {
+      ...flare,
+      startedAt: elapsedTime,
+      duration: 0.8 + Math.random() * 0.6
+    };
+  }
   // sun.rotation.z += 0.0001;
   skybox.rotation.y += 0.00002;
 

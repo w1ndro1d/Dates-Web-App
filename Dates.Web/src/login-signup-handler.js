@@ -1,177 +1,107 @@
-//login and signup
-const modal = document.getElementById("loginModal");
-const loginSignupButton = document.getElementById("login");
-const defaultTab = document.getElementById("defaultOpen");
-const signupForm = document.getElementById("signupForm");
-const profileButton = document.getElementById("profile");
+import { api } from './api.js';
 
-document.querySelectorAll(".password-toggle").forEach((toggle) => {
-  toggle.addEventListener("click", () => {
-    const passwordInput = document.getElementById(toggle.dataset.passwordTarget);
-    const showingPassword = passwordInput.type === "text";
-    passwordInput.type = showingPassword ? "password" : "text";
-    toggle.classList.toggle("is-visible", !showingPassword);
-    toggle.setAttribute("aria-label", showingPassword ? "Show password" : "Hide password");
-    toggle.title = showingPassword ? "Show password" : "Hide password";
+export const modal = document.getElementById('loginModal');
+export const loginSignupButton = document.getElementById('login');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const authStatus = document.getElementById('auth-status');
+const notification = document.getElementById('notification');
+const closeNotification = document.getElementById('notification-close');
+let notificationTimer;
+export function showNotification(message, type = 'info', title = 'Dates') {
+  clearTimeout(notificationTimer);
+  notification.className = `notification notification-${type}`;
+  document.getElementById('notification-title').textContent = title;
+  document.getElementById('notification-message').textContent = message;
+  notification.setAttribute('aria-hidden', 'false');
+  notification.inert = false;
+  notificationTimer = setTimeout(hideNotification, 6500);
+}
+function hideNotification() {
+  notification.setAttribute('aria-hidden', 'true');
+  notification.inert = true;
+}
+hideNotification();
+closeNotification.addEventListener('click', hideNotification);
+function status(message, isError = false) {
+  authStatus.textContent = message;
+  authStatus.classList.toggle('is-error', isError);
+}
+function openTab(name) {
+  document.querySelectorAll('.tabcontent').forEach(panel => { panel.style.display = panel.id === name ? 'flex' : 'none'; });
+  document.querySelectorAll('.tablinks').forEach(button => {
+    button.classList.toggle('active', button.dataset.tab === name);
+    button.setAttribute('aria-pressed', String(button.dataset.tab === name));
+  });
+}
+document.querySelectorAll('.tablinks').forEach(button => button.addEventListener('click', () => openTab(button.dataset.tab)));
+openTab('LoginForm');
+loginSignupButton.addEventListener('click', event => { event.preventDefault(); modal.style.display = 'flex'; });
+document.querySelectorAll('.password-toggle').forEach(button => button.addEventListener('click', () => {
+  const input = document.getElementById(button.dataset.passwordTarget);
+  const visible = input.type === 'password';
+  input.type = visible ? 'text' : 'password';
+  button.classList.toggle('is-visible', visible);
+  button.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+  button.title = button.getAttribute('aria-label');
+}));
+// Old development JWTs are no longer used; the session is an HttpOnly cookie.
+try { localStorage.removeItem('token'); } catch { /* Storage may be disabled. */ }
+export const sessionReady = api('/Authentication/me').catch(error => {
+  if (error.status !== 401) showNotification(error.message, 'error', 'Could not check your session');
+  return null;
+});
+async function pending(button, action) {
+  if (button.disabled) return;
+  const label = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Please wait…';
+  try { await action(); } catch (error) { status(error.message, true); }
+  finally { button.disabled = false; button.textContent = label; }
+}
+signupForm.addEventListener('submit', event => {
+  event.preventDefault();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  if (password !== document.getElementById('signup-confirm-password').value) {
+    status('Both passwords must match.', true); return;
+  }
+  pending(signupForm.querySelector('[type=submit]'), async () => {
+    const result = await api('/Authentication/register', { method: 'POST', body: { email, password } });
+    status(result.message);
+    loginForm.querySelector('[type=email]').value = email;
+    signupForm.reset();
+    openTab('LoginForm');
   });
 });
-
-//open modal when button is clicked
-loginSignupButton.addEventListener('click', () => {
-  modal.style.display="flex";
-})
-
-//close modal when user clicks outside modal
-window.addEventListener('click', (event) => {
-  if(event.target == modal){
-    modal.style.display="none";
-  }
-})
-
-//open login/signup form
-function openTab(evt, formName){
-  const tabContents = document.getElementsByClassName("tabcontent");
-  for(let i=0; i<tabContents.length; i++){
-    tabContents[i].style.display = "none";
-  }
-  const tabLinks = document.getElementsByClassName("tablinks");
-  for(let i=0; i<tabLinks.length; i++){
-    tabLinks[i].classList.remove("active");
-  }
-  document.getElementById(formName).style.display = "flex";
-  evt.currentTarget.classList.add("active");
-}
-
-//set default tab to "Login"
-defaultTab.click();
-
-
-//signup logic
-document.getElementById("SignupForm").addEventListener("submit", async(e) => {
-  e.preventDefault();
-  const email = e.target.elements[0].value;
-  const password = e.target.elements[1].value;
-  const confirmPassword = e.target.elements[2].value;
-
-  if(password !== confirmPassword){
-    alert("Passwords do not match!");
-    return;
-  }
-
-  try{
-    const response = await fetch("https://localhost:7275/api/Authentication/register", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({email, password}),
-    });
-
-    if(response.ok){
-      alert("Signup successful! You can now log into your account.");
-      defaultTab.click();
-      signupForm.reset();
-    }
-    else{
-      const error = await response.json();
-      alert(error.message || "Signup failed!");
-    }
-  }
-  catch(err)
-  {
-    console.error(err);
-    alert("Error occured during signup!");
-  }
-});
-
-//decode JWT token
-function decodeToken(token) {
-  const payloadBase64 = token.split('.')[1];
-  const decodedPayload = atob(payloadBase64);
-  // console.log(decodedPayload);
-  return JSON.parse(decodedPayload);
-}
-
-//TODO fix multiple logins successively due to latency(disable this)
-//login logic
-document.getElementById("loginForm").addEventListener("submit", async(e) => {
-  e.preventDefault();
-  const email = e.target.elements[0].value;
-  const password = e.target.elements[1].value;
-
-  // console.log("Email:", email);
-  // console.log("Password:", password);
-
-  try{
-    const response = await fetch("https://localhost:7275/api/Authentication/login", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({  
-      email: email.trim(), 
-      password: password.trim()
-    })
+loginForm.addEventListener('submit', event => {
+  event.preventDefault();
+  pending(loginForm.querySelector('[type=submit]'), async () => {
+    await api('/Authentication/login', { method: 'POST', body: {
+      email: loginForm.querySelector('[type=email]').value.trim(), password: document.getElementById('login-password').value
+    } });
+    location.reload();
   });
-
-  // console.log(password);
-
-  if(response.ok){
-    const {token} = await response.json();
-    localStorage.setItem("token", token);
-    // alert("Login Successful!");
-    // window.location.href = "/dashboard.html";
-    modal.style.display = "none";
-
-    if(token){
-      try{
-        const decodedToken = decodeToken(token);
-        const userEmail = decodedToken.unique_name;
-  
-        //hide login/signup button
-        loginSignupButton.style.display = "none";
-  
-        //show Profile button
-        profileButton.style.display = "flex";
-        // console.log(decodedToken.email);
-        profileButton.textContent = userEmail;
-  
-        //remove login/signup popup
-        modal.style.display = "none";
-
-        //just reload to trigger DOMContentLoaded handled in main-3d.js instead of having to repeat code here
-        location.reload();
-
-        // Show My Events button
-        //only show this as part of dropdown
-        // const myEventsButton = document.getElementById("myevents");
-        // myEventsButton.style.display = "flex";        
-  
-        //add click listener for Profile button
-        // profileButton.addEventListener("click", () => {
-        //   window.location.href = "/profile.html";
-        // })
-      }
-      catch(error)
-      {
-        console.error("Invalid token format or error decoding token! ", error);
-        //clear token if it is invalid
-        localStorage.removeItem("token");
-      }
-    }
-    else{
-      loginSignupButton.style.display = "flex";
-      profileButton.style.display = "none";
-      modal.style.display = "flex";
-    }
-  }
-  else{
-    const error = await response.json();
-    alert(error.message || "Invalid Credentials! Please try again.");
-  }
-  }
-  catch(err)
-  {
-    console.error(err);
-    alert("Error occured during login!");
-  }
 });
-
-//TODO auto scaling of canvas
-//TODO fix login/signup without css appearing for a brief moment before canvas load during refresh
+document.getElementById('resend-verification').addEventListener('click', event => {
+  const emailInput = loginForm.querySelector('[type=email]');
+  if (!emailInput.reportValidity()) return;
+  pending(event.currentTarget, async () => {
+    const result = await api('/Authentication/resend-verification', { method: 'POST', body: { email: emailInput.value.trim() } });
+    status(result.message);
+  });
+});
+let verificationToken = new URLSearchParams(location.hash.slice(1)).get('verify-email');
+const verifyButton = document.getElementById('verify-email');
+if (verificationToken) {
+  history.replaceState({}, '', location.pathname + location.search);
+  modal.style.display = 'flex';
+  verifyButton.hidden = false;
+  status('Finish verifying your email, then sign in.');
+}
+verifyButton.addEventListener('click', event => pending(event.currentTarget, async () => {
+  const result = await api('/Authentication/verify-email', { method: 'POST', body: { token: verificationToken } });
+  verificationToken = null;
+  verifyButton.hidden = true;
+  status(result.message);
+}));

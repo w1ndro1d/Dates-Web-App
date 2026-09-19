@@ -9,6 +9,12 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+// The .NET app is retained for local use; secrets are never published with it.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true)
+        .AddEnvironmentVariables();
+}
 
 // Set CORS policy
 builder.Services.AddCors(options =>
@@ -53,6 +59,8 @@ builder.Services.AddDbContext<UserDetailsContext>(options => options.UseSqlServe
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+builder.Services.AddHostedService<EmailReminderWorker>();
 
 var app = builder.Build();
 
